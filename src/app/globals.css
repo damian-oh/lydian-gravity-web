@@ -5,6 +5,12 @@
   --foreground: #0f172a;
   --accent: #f59e0b;
   --highlight: #e2e8f0;
+  --surface: #ffffff;
+  --surface-strong: #dbe4ef;
+  --muted: #475569;
+  --accent-soft: #fef3c7;
+  --font-body: "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-code: "IBM Plex Mono", "SFMono-Regular", "Cascadia Code", monospace;
 }
 
 @theme inline {
@@ -12,8 +18,12 @@
   --color-foreground: var(--foreground);
   --color-accent: var(--accent);
   --color-highlight: var(--highlight);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-muted: var(--muted);
+  --color-accent-soft: var(--accent-soft);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-code);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,11 +32,33 @@
     --foreground: #e2e8f0;
     --accent: #fbbf24;
     --highlight: #334155;
+    --surface: #0f172a;
+    --surface-strong: #1e293b;
+    --muted: #94a3b8;
+    --accent-soft: #422006;
   }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), sans-serif;
+  font-family: var(--font-body);
+  line-height: 1.5;
+}
+
+a {
+  color: inherit;
+}
+
+::selection {
+  background: rgb(245 158 11 / 0.22);
+  color: var(--foreground);
 }
