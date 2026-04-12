@@ -4,21 +4,23 @@ This document records the color system for the frontend and distinguishes betwee
 
 ## Status
 
-- Current implementation: partial
-- Global theme tokens currently implemented in `src/app/globals.css`: `background`, `foreground`
-- Font status: `src/app/layout.tsx` loads `Geist` and `Geist Mono`, but `body` in `src/app/globals.css` still uses `Arial, Helvetica, sans-serif`
-- Homepage status: `src/app/page.tsx` still uses hard-coded `slate`, `cyan`, and `blue` utility classes instead of semantic theme tokens
+- Current implementation: active across global styles, auth screens, and the landing page
+- Global theme tokens currently implemented in `src/app/globals.css`: `background`, `foreground`, `accent`, `highlight`
+- Font status: `src/app/layout.tsx` loads `Geist` and `Geist Mono`, and `body` in `src/app/globals.css` uses `var(--font-geist-sans)`
+- Homepage status: `src/app/page.tsx` uses semantic theme tokens and includes auth navigation to `/login` and `/register`
 
 ## Current Implementation
 
 ### Global Tokens
 
-The app currently defines two root CSS variables and exposes them to Tailwind through `@theme inline`.
+The app currently defines four root CSS variables and exposes them to Tailwind through `@theme inline`.
 
 | Token | Light | Dark | Purpose |
 | :--- | :--- | :--- | :--- |
-| `--background` | `#FFFFFF` | `#0A0A0A` | App background and large surface areas |
-| `--foreground` | `#171717` | `#EDEDED` | Default text color |
+| `--background` | `#F1F5F9` | `#020617` | App background and large surface areas |
+| `--foreground` | `#0F172A` | `#E2E8F0` | Default text color and high-emphasis UI content |
+| `--accent` | `#F59E0B` | `#FBBF24` | Active states, emphasis, and calls to action |
+| `--highlight` | `#E2E8F0` | `#334155` | Borders, dividers, muted surfaces, and secondary panels |
 
 These are mapped in `src/app/globals.css` as:
 
@@ -26,6 +28,8 @@ These are mapped in `src/app/globals.css` as:
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --color-highlight: var(--highlight);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -35,31 +39,17 @@ These are mapped in `src/app/globals.css` as:
 
 Dark mode is controlled by `@media (prefers-color-scheme: dark)` in `src/app/globals.css`.
 
-| Mode | Background | Foreground |
-| :--- | :--- | :--- |
-| Light | `#FFFFFF` | `#171717` |
-| Dark | `#0A0A0A` | `#EDEDED` |
+| Mode | Background | Foreground | Accent | Highlight |
+| :--- | :--- | :--- | :--- | :--- |
+| Light | `#F1F5F9` | `#0F172A` | `#F59E0B` | `#E2E8F0` |
+| Dark | `#020617` | `#E2E8F0` | `#FBBF24` | `#334155` |
 
 ### Typography Notes
 
 - `Geist` and `Geist Mono` are loaded in `src/app/layout.tsx`
 - `--font-sans` and `--font-mono` are exposed through `@theme inline`
-- `body` currently overrides the default text stack with `Arial, Helvetica, sans-serif`
+- `body` uses `var(--font-geist-sans), sans-serif`
 - Components should prefer semantic font tokens or Tailwind font utilities once the typography system is standardized
-
-### Known Gap
-
-The landing page is not yet using the global semantic color tokens. It currently applies these utility colors directly:
-
-- `bg-slate-900`
-- `text-white`
-- `text-slate-400`
-- `border-slate-700`
-- `bg-slate-800/50`
-- `from-cyan-400`
-- `to-blue-600`
-
-Until those are migrated, this document should be treated as the desired color direction plus a record of the current implementation.
 
 ## Target Palette
 
@@ -79,9 +69,9 @@ This is the intended palette to standardize the UI around as the app moves away 
 - `accent` should be used sparingly so it remains meaningful
 - `highlight` should support layout structure without competing with text
 
-## Planned Tailwind Tokens
+## Implemented Tailwind Tokens
 
-When the UI is migrated to the target palette, `src/app/globals.css` should expose semantic tokens like this:
+`src/app/globals.css` exposes semantic tokens like this:
 
 ```css
 @theme inline {
@@ -94,7 +84,7 @@ When the UI is migrated to the target palette, `src/app/globals.css` should expo
 }
 ```
 
-The corresponding root variables would then define the actual light and dark values.
+The root variables define the light and dark values listed above.
 
 ## Usage Rules
 
@@ -106,4 +96,4 @@ The corresponding root variables would then define the actual light and dark val
 
 ## Next Step
 
-When the homepage and future components are updated to consume semantic tokens, this file should be simplified by removing the "Known Gap" section and promoting the target palette to the implemented standard.
+As future components are added, they should continue consuming semantic theme tokens rather than introducing raw palette utilities.
