@@ -694,6 +694,8 @@ export function SongEditorWorkspace({
     totalBeats: activeSection?.totalBeats ?? 1,
     tempoBpm: song.tempoBpm,
     timeSignature: song.timeSignature,
+    chords: activeSection?.chords ?? [],
+    melodicNotes: activeSection?.melodicNotes ?? [],
   });
 
   useEffect(() => {

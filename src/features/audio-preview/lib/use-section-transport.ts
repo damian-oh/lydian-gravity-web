@@ -41,13 +41,54 @@ export type TransportActions = Readonly<{
   setMasterLevel: (level: number) => void;
 }>;
 
+export type PlaybackChord = Readonly<{
+  id: number;
+  chordName: string;
+  notes: readonly string[];
+  startBeat: number;
+  durationBeats: number;
+}>;
+
+export type PlaybackMelodicNote = Readonly<{
+  id: number;
+  pitch: number;
+  startBeat: number;
+  durationBeats: number;
+}>;
+
 type UseSectionTransportOptions = Readonly<{
   scopeKey: number;
   sectionId: number;
   totalBeats: number;
   tempoBpm: number;
   timeSignature: string;
+  chords: readonly PlaybackChord[];
+  melodicNotes: readonly PlaybackMelodicNote[];
 }>;
+
+const noteToSemitone: Readonly<Record<string, number>> = {
+  C: 0,
+  "B#": 0,
+  "C#": 1,
+  Db: 1,
+  D: 2,
+  "D#": 3,
+  Eb: 3,
+  E: 4,
+  Fb: 4,
+  F: 5,
+  "E#": 5,
+  "F#": 6,
+  Gb: 6,
+  G: 7,
+  "G#": 8,
+  Ab: 8,
+  A: 9,
+  "A#": 10,
+  Bb: 10,
+  B: 11,
+  Cb: 11,
+};
 
 function getBeatsPerBar(timeSignature: string) {
   const [numerator] = timeSignature.split("/");
@@ -76,12 +117,35 @@ function clampMasterLevel(level: number) {
   return Math.max(0, Math.min(1, level));
 }
 
+function stripOctave(noteName: string) {
+  return noteName.replace(/\d+$/, "");
+}
+
+function noteNameToFrequency(noteName: string, octave = 4) {
+  const pitchClass = stripOctave(noteName);
+  const semitone = noteToSemitone[pitchClass];
+
+  if (semitone === undefined) {
+    return null;
+  }
+
+  const midi = (octave + 1) * 12 + semitone;
+
+  return 440 * 2 ** ((midi - 69) / 12);
+}
+
+function midiToFrequency(pitch: number) {
+  return 440 * 2 ** ((pitch - 69) / 12);
+}
+
 export function useSectionTransport({
   scopeKey,
   sectionId,
   totalBeats,
   tempoBpm,
   timeSignature,
+  chords,
+  melodicNotes,
 }: UseSectionTransportOptions): Readonly<{
   state: TransportState;
   actions: TransportActions;
@@ -96,6 +160,9 @@ export function useSectionTransport({
 
   const animationFrameIdRef = useRef<number | null>(null);
   const lastFrameTimeRef = useRef<number | null>(null);
+  const currentBeatRef = useRef(0);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const triggeredEventKeysRef = useRef<Set<string>>(new Set());
 
   const beatsPerBar = useMemo(
     () => getBeatsPerBar(timeSignature),
@@ -113,16 +180,23 @@ export function useSectionTransport({
     setBoundScopeKey(scopeKey);
     setStatus("stopped");
     setCurrentBeat(0);
+    currentBeatRef.current = 0;
+    triggeredEventKeysRef.current.clear();
   }, [scopeKey]);
 
   const play = useCallback(() => {
     setBoundScopeKey(scopeKey);
+    triggeredEventKeysRef.current.clear();
     setCurrentBeat((current) => {
       const baseCurrentBeat = isCurrentScopeBound
         ? clampBeat(current, safeTotalBeats)
         : 0;
 
-      return baseCurrentBeat >= safeTotalBeats ? 0 : baseCurrentBeat;
+      const nextBeat = baseCurrentBeat >= safeTotalBeats ? 0 : baseCurrentBeat;
+
+      currentBeatRef.current = nextBeat;
+
+      return nextBeat;
     });
     setStatus("playing");
   }, [isCurrentScopeBound, safeTotalBeats, scopeKey]);
@@ -135,7 +209,11 @@ export function useSectionTransport({
   const seek = useCallback(
     (beat: number) => {
       setBoundScopeKey(scopeKey);
-      setCurrentBeat(clampBeat(beat, safeTotalBeats));
+      const nextBeat = clampBeat(beat, safeTotalBeats);
+
+      currentBeatRef.current = nextBeat;
+      triggeredEventKeysRef.current.clear();
+      setCurrentBeat(nextBeat);
     },
     [safeTotalBeats, scopeKey],
   );
@@ -155,6 +233,129 @@ export function useSectionTransport({
   const updateMasterLevel = useCallback((nextLevel: number) => {
     setMasterLevel(clampMasterLevel(nextLevel));
   }, []);
+
+  const playToneFrequencies = useCallback(
+    (frequencies: readonly number[], durationSeconds: number, gainMultiplier = 1) => {
+      if (frequencies.length === 0 || typeof window === "undefined") {
+        return;
+      }
+
+      const AudioContextCtor =
+        window.AudioContext ??
+        (window as unknown as { webkitAudioContext?: typeof AudioContext })
+          .webkitAudioContext;
+
+      if (!AudioContextCtor) {
+        return;
+      }
+
+      const audioContext =
+        audioContextRef.current ?? new AudioContextCtor();
+      audioContextRef.current = audioContext;
+
+      if (audioContext.state === "suspended") {
+        void audioContext.resume();
+      }
+
+      const startTime = audioContext.currentTime;
+      const safeDurationSeconds = Math.max(0.08, durationSeconds);
+
+      frequencies.forEach((frequency) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.type = waveform;
+        oscillator.frequency.setValueAtTime(frequency, startTime);
+        gainNode.gain.setValueAtTime(0.0001, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(
+          Math.max(0.0001, (masterLevel * gainMultiplier) / frequencies.length),
+          startTime + 0.018,
+        );
+        gainNode.gain.exponentialRampToValueAtTime(
+          0.0001,
+          startTime + safeDurationSeconds,
+        );
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        oscillator.start(startTime);
+        oscillator.stop(startTime + safeDurationSeconds + 0.03);
+      });
+    },
+    [masterLevel, waveform],
+  );
+
+  const triggerPlaybackEvents = useCallback(
+    (fromBeat: number, toBeat: number) => {
+      const secondsPerBeat = 60 / Math.max(1, tempoBpm);
+      const eventKeys = triggeredEventKeysRef.current;
+
+      function isCrossed(startBeat: number) {
+        return startBeat >= fromBeat && startBeat < toBeat;
+      }
+
+      chords.forEach((chord) => {
+        const eventKey = `chord:${sectionId}:${chord.id}:${chord.startBeat}`;
+
+        if (!isCrossed(chord.startBeat) || eventKeys.has(eventKey)) {
+          return;
+        }
+
+        const frequencies = chord.notes
+          .map((note) => noteNameToFrequency(note, 3))
+          .filter((frequency): frequency is number => frequency !== null);
+
+        playToneFrequencies(
+          frequencies,
+          chord.durationBeats * secondsPerBeat * 0.92,
+          0.72,
+        );
+        eventKeys.add(eventKey);
+      });
+
+      melodicNotes.forEach((note) => {
+        const eventKey = `melody:${sectionId}:${note.id}:${note.startBeat}`;
+
+        if (!isCrossed(note.startBeat) || eventKeys.has(eventKey)) {
+          return;
+        }
+
+        playToneFrequencies(
+          [midiToFrequency(note.pitch)],
+          note.durationBeats * secondsPerBeat * 0.88,
+          0.52,
+        );
+        eventKeys.add(eventKey);
+      });
+
+      if (!metronomeEnabled) {
+        return;
+      }
+
+      const firstBeat = Math.floor(fromBeat) + 1;
+      const lastBeat = Math.floor(toBeat);
+
+      for (let beat = firstBeat; beat <= lastBeat; beat += 1) {
+        const eventKey = `metronome:${sectionId}:${beat}`;
+
+        if (eventKeys.has(eventKey)) {
+          continue;
+        }
+
+        playToneFrequencies([beat % beatsPerBar === 0 ? 1046.5 : 784], 0.055, 0.16);
+        eventKeys.add(eventKey);
+      }
+    },
+    [
+      beatsPerBar,
+      chords,
+      melodicNotes,
+      metronomeEnabled,
+      playToneFrequencies,
+      sectionId,
+      tempoBpm,
+    ],
+  );
 
   useEffect(() => {
     if (playbackStatus !== "playing") {
@@ -184,14 +385,26 @@ export function useSectionTransport({
         const nextBeat = baseCurrentBeat + deltaBeats;
 
         if (nextBeat < safeTotalBeats) {
+          triggerPlaybackEvents(baseCurrentBeat, nextBeat);
+          currentBeatRef.current = nextBeat;
+
           return nextBeat;
         }
 
         if (loopEnabled) {
-          return safeTotalBeats === 0 ? 0 : nextBeat % safeTotalBeats;
+          triggerPlaybackEvents(baseCurrentBeat, safeTotalBeats);
+          triggeredEventKeysRef.current.clear();
+          const wrappedBeat = safeTotalBeats === 0 ? 0 : nextBeat % safeTotalBeats;
+
+          triggerPlaybackEvents(0, wrappedBeat);
+          currentBeatRef.current = wrappedBeat;
+
+          return wrappedBeat;
         }
 
         reachedSectionEnd = true;
+        triggerPlaybackEvents(baseCurrentBeat, safeTotalBeats);
+        currentBeatRef.current = safeTotalBeats;
 
         return safeTotalBeats;
       });
@@ -216,7 +429,14 @@ export function useSectionTransport({
       }
       lastFrameTimeRef.current = null;
     };
-  }, [isCurrentScopeBound, loopEnabled, playbackStatus, safeTotalBeats, tempoBpm]);
+  }, [
+    isCurrentScopeBound,
+    loopEnabled,
+    playbackStatus,
+    safeTotalBeats,
+    tempoBpm,
+    triggerPlaybackEvents,
+  ]);
 
   const state = useMemo<TransportState>(
     () => ({
