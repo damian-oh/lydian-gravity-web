@@ -156,12 +156,14 @@ export function SongSetupForm() {
             <input
               className={inputClassName}
               value={draft.title}
-              onChange={(event) =>
+              onChange={(event) => {
+                const nextTitle = event.currentTarget.value;
+
                 setDraft((current) => ({
                   ...current,
-                  title: event.currentTarget.value,
-                }))
-              }
+                  title: nextTitle,
+                }));
+              }}
               placeholder="Name the sketch"
             />
           </div>
@@ -171,12 +173,14 @@ export function SongSetupForm() {
             <select
               className={inputClassName}
               value={draft.masterTonalCenter}
-              onChange={(event) =>
+              onChange={(event) => {
+                const nextTonalCenter = event.currentTarget.value;
+
                 setDraft((current) => ({
                   ...current,
-                  masterTonalCenter: event.currentTarget.value,
-                }))
-              }
+                  masterTonalCenter: nextTonalCenter,
+                }));
+              }}
             >
               {tonalCenters.map((tonalCenter) => (
                 <option key={tonalCenter} value={tonalCenter}>
@@ -191,12 +195,14 @@ export function SongSetupForm() {
             <select
               className={inputClassName}
               value={draft.masterMode}
-              onChange={(event) =>
+              onChange={(event) => {
+                const nextMode = event.currentTarget.value;
+
                 setDraft((current) => ({
                   ...current,
-                  masterMode: event.currentTarget.value,
-                }))
-              }
+                  masterMode: nextMode,
+                }));
+              }}
             >
               {modes.map((mode) => (
                 <option key={mode} value={mode}>
@@ -214,12 +220,14 @@ export function SongSetupForm() {
               min={20}
               max={300}
               value={draft.tempoBpm}
-              onChange={(event) =>
+              onChange={(event) => {
+                const nextTempoBpm = Number(event.currentTarget.value) || 20;
+
                 setDraft((current) => ({
                   ...current,
-                  tempoBpm: Number(event.currentTarget.value) || 20,
-                }))
-              }
+                  tempoBpm: nextTempoBpm,
+                }));
+              }}
             />
           </div>
 
@@ -228,12 +236,14 @@ export function SongSetupForm() {
             <select
               className={inputClassName}
               value={draft.timeSignature}
-              onChange={(event) =>
+              onChange={(event) => {
+                const nextTimeSignature = event.currentTarget.value;
+
                 setDraft((current) => ({
                   ...current,
-                  timeSignature: event.currentTarget.value,
-                }))
-              }
+                  timeSignature: nextTimeSignature,
+                }));
+              }}
             >
               {timeSignatures.map((timeSignature) => (
                 <option key={timeSignature} value={timeSignature}>
@@ -249,12 +259,14 @@ export function SongSetupForm() {
           <textarea
             className={`${inputClassName} min-h-40 resize-y`}
             value={draft.notes}
-            onChange={(event) =>
+            onChange={(event) => {
+              const nextNotes = event.currentTarget.value;
+
               setDraft((current) => ({
                 ...current,
-                notes: event.currentTarget.value,
-              }))
-            }
+                notes: nextNotes,
+              }));
+            }}
             placeholder="Capture lyrical ideas, arrangement notes, or harmonic targets."
           />
         </div>
