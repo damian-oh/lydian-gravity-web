@@ -11,7 +11,7 @@ import {
 import type {
   MelodicNoteModel,
   SongChord,
-} from "@/features/song-editor/lib/mock-song-data";
+} from "@/features/song-editor/lib/song-model";
 import { cn } from "@/lib/cn";
 
 type TimelineBar = Readonly<{

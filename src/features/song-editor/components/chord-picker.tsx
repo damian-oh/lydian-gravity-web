@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 
-import { type SongChord } from "@/features/song-editor/lib/mock-song-data";
 import {
   type ChordCatalog,
   type ChordCatalogItem,
   type ChordCatalogTab,
 } from "@/features/song-editor/lib/chord-catalog";
+import { type SongChord } from "@/features/song-editor/lib/song-model";
 import { cn } from "@/lib/cn";
 
 type ChordPickerProps = Readonly<{

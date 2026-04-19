@@ -1,7 +1,7 @@
 import type {
   MelodicNoteModel,
   SongChord,
-} from "@/features/song-editor/lib/mock-song-data";
+} from "@/features/song-editor/lib/song-model";
 
 export type MelodyGravityClass =
   | "anchor"
