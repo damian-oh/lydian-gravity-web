@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useLayoutEffect, useState, type MouseEvent, type ReactNode } from "react";
 
 import {
   AppShellNavigationContext,
   type AppShellNavigationGuard,
 } from "@/components/layout/app-shell-navigation";
+import { useAuth } from "@/features/auth/providers/auth-provider";
 import { cn } from "@/lib/cn";
 
 type AppShellProps = Readonly<{
@@ -137,6 +138,8 @@ function NavigationLink({
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout, user } = useAuth();
   const [navigationGuard, setNavigationGuard] =
     useState<AppShellNavigationGuard | null>(null);
 
@@ -148,6 +151,15 @@ export function AppShell({ children }: AppShellProps) {
     return normalizePath(href) === normalizePath(pathname)
       ? true
       : window.confirm(navigationGuard.message);
+  }
+
+  function handleLogout() {
+    if (!confirmNavigation("/login")) {
+      return;
+    }
+
+    logout();
+    router.replace("/login");
   }
 
   useLayoutEffect(() => {
@@ -214,6 +226,18 @@ export function AppShell({ children }: AppShellProps) {
                       pill
                     />
                   ))}
+                  <div className="flex items-center gap-2 rounded-full border border-highlight/80 bg-background/45 px-3 py-2">
+                    <span className="max-w-44 truncate text-sm font-semibold text-foreground/70">
+                      {user?.email}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="rounded-full border border-highlight/80 bg-surface px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-foreground/65 transition hover:border-accent/30 hover:text-foreground focus:outline-none focus:ring-4 focus:ring-accent/20"
+                    >
+                      Logout
+                    </button>
+                  </div>
                 </nav>
               </div>
             </header>
@@ -233,8 +257,17 @@ export function AppShell({ children }: AppShellProps) {
                     <span className="h-2 w-2 rounded-full bg-accent" />
                     LYDIAN GRAVITY
                   </Link>
-                  <p className="text-sm text-muted">Library, setup, and editor views.</p>
+                  <p className="text-sm text-muted">
+                    {user?.email ?? "Library, setup, and editor views."}
+                  </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="rounded-full border border-highlight/80 bg-background/45 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-foreground/65 transition hover:border-accent/30 hover:text-foreground focus:outline-none focus:ring-4 focus:ring-accent/20"
+                >
+                  Logout
+                </button>
               </div>
 
               <nav className="-mx-1 mt-4 flex gap-3 overflow-x-auto px-1 pb-1">

@@ -10,19 +10,24 @@ export const metadata: Metadata = {
 
 type LoginPageProps = Readonly<{
   searchParams: Promise<{
+    next?: string | string[];
     registered?: string | string[];
   }>;
 }>;
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { registered } = await searchParams;
+  const { next, registered } = await searchParams;
   const registrationComplete = Array.isArray(registered)
     ? registered.includes("1")
     : registered === "1";
+  const nextPath = Array.isArray(next) ? next[0] : next;
 
   return (
     <AuthPageShell>
-      <LoginCard registrationComplete={registrationComplete} />
+      <LoginCard
+        nextPath={nextPath}
+        registrationComplete={registrationComplete}
+      />
     </AuthPageShell>
   );
 }

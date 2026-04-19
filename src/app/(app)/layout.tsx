@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
 
-import { AppShell } from "@/components/layout/app-shell";
+import { AuthenticatedAppShell } from "@/features/auth/components/authenticated-app-shell";
 
 type AppLayoutProps = Readonly<{
   children: ReactNode;
 }>;
 
 export default function AppLayout({ children }: AppLayoutProps) {
-  return <AppShell>{children}</AppShell>;
+  return <AuthenticatedAppShell>{children}</AuthenticatedAppShell>;
 }

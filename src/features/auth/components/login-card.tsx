@@ -4,10 +4,14 @@ import { AuthTextLink } from "./auth-text-link";
 import { LoginForm } from "./login-form";
 
 type LoginCardProps = Readonly<{
+  nextPath?: string;
   registrationComplete?: boolean;
 }>;
 
-export function LoginCard({ registrationComplete = false }: LoginCardProps) {
+export function LoginCard({
+  nextPath,
+  registrationComplete = false,
+}: LoginCardProps) {
   return (
     <AuthCard
       title="Sign In"
@@ -28,7 +32,7 @@ export function LoginCard({ registrationComplete = false }: LoginCardProps) {
         </p>
       }
     >
-      <LoginForm />
+      <LoginForm nextPath={nextPath} />
     </AuthCard>
   );
 }
