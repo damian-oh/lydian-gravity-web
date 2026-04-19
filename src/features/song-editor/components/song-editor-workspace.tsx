@@ -7,6 +7,7 @@ import { PanelShell } from "@/components/ui/panel-shell";
 import { AudioPreviewPanel } from "@/features/audio-preview/components/audio-preview-panel";
 import { TransportBar } from "@/features/audio-preview/components/transport-bar";
 import { useSectionTransport } from "@/features/audio-preview/lib/use-section-transport";
+import { useAppShellNavigation } from "@/components/layout/app-shell-navigation";
 import { ChordPicker } from "@/features/song-editor/components/chord-picker";
 import { MelodyLaneEditor } from "@/features/song-editor/components/melody-lane-editor";
 import {
@@ -19,17 +20,21 @@ import {
 } from "@/features/song-editor/lib/chord-catalog";
 import { buildMelodyGravityMap } from "@/features/song-editor/lib/melody-gravity";
 import {
+  emptySectionTheory,
   type MelodicNoteModel,
   type SectionType,
   type SongChord,
   type SongSectionModel,
   type SongSketchModel,
-} from "@/features/song-editor/lib/mock-song-data";
+} from "@/features/song-editor/lib/song-model";
 import { TheoryPanel } from "@/features/theory/components/theory-panel";
 import { cn } from "@/lib/cn";
 
 type SongEditorWorkspaceProps = Readonly<{
   song: SongSketchModel;
+  onSaveArrangement: (
+    sections: readonly SongSectionModel[],
+  ) => Promise<SongSketchModel>;
 }>;
 
 type TimelineBar = Readonly<{
@@ -622,7 +627,10 @@ function ChordPickerMobileSheet({
   );
 }
 
-export function SongEditorWorkspace({ song }: SongEditorWorkspaceProps) {
+export function SongEditorWorkspace({
+  song,
+  onSaveArrangement,
+}: SongEditorWorkspaceProps) {
   const [sections, setSections] = useState(song.sections);
   const [activeSectionId, setActiveSectionId] = useState(song.sections[0]?.id ?? 0);
   const [selectedChordId, setSelectedChordId] = useState<number | null>(
@@ -636,6 +644,25 @@ export function SongEditorWorkspace({ song }: SongEditorWorkspaceProps) {
     "progression",
   );
   const [transportScopeKey, setTransportScopeKey] = useState(0);
+  const [dirty, setDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const { setNavigationGuard } = useAppShellNavigation();
+
+  useEffect(() => {
+    setNavigationGuard(
+      dirty
+        ? {
+            message: "Leave this editor and discard unsaved arrangement changes?",
+          }
+        : null,
+    );
+
+    return () => {
+      setNavigationGuard(null);
+    };
+  }, [dirty, setNavigationGuard]);
 
   useEffect(() => {
     setPickerState(null);
@@ -719,6 +746,38 @@ export function SongEditorWorkspace({ song }: SongEditorWorkspaceProps) {
       : null;
   const pickerChord = pickerSlot?.chord ?? null;
 
+  function markArrangementDirty() {
+    setDirty(true);
+    setSaveMessage(null);
+    setSaveError(null);
+  }
+
+  async function handleSaveArrangement() {
+    setIsSaving(true);
+    setSaveError(null);
+    setSaveMessage(null);
+
+    try {
+      const savedSong = await onSaveArrangement(sections);
+      setSections(savedSong.sections);
+      setActiveSectionId((currentActiveSectionId) =>
+        savedSong.sections.some((section) => section.id === currentActiveSectionId)
+          ? currentActiveSectionId
+          : savedSong.sections[0]?.id ?? 0,
+      );
+      setDirty(false);
+      setSaveMessage("Arrangement saved.");
+    } catch (error) {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "Unable to save the arrangement.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   function handleActivateSection(nextSection: SongSectionModel) {
     if (nextSection.id !== activeSectionId) {
       setTransportScopeKey((current) => current + 1);
@@ -730,6 +789,7 @@ export function SongEditorWorkspace({ song }: SongEditorWorkspaceProps) {
   }
 
   function handleSectionTypeChange(sectionId: number, sectionType: SectionType) {
+    markArrangementDirty();
     setSections((currentSections) =>
       reindexSections(
         currentSections.map((section) =>
@@ -740,6 +800,7 @@ export function SongEditorWorkspace({ song }: SongEditorWorkspaceProps) {
   }
 
   function handleBarCountChange(sectionId: number, nextBarCount: number) {
+    markArrangementDirty();
     setSections((currentSections) =>
       reindexSections(
         currentSections.map((section) => {
@@ -777,6 +838,7 @@ export function SongEditorWorkspace({ song }: SongEditorWorkspaceProps) {
       sections.filter((section) => section.id !== sectionId),
     );
 
+    markArrangementDirty();
     setSections(nextSections);
 
     if (activeSectionId !== sectionId) {
@@ -790,6 +852,7 @@ export function SongEditorWorkspace({ song }: SongEditorWorkspaceProps) {
   }
 
   function handleAddSection(sectionType: SectionType) {
+    markArrangementDirty();
     setSections((currentSections) => {
       const nextSectionId = getNextSectionId(currentSections);
       const nextSection: SongSectionModel = {
@@ -801,13 +864,7 @@ export function SongEditorWorkspace({ song }: SongEditorWorkspaceProps) {
         totalBeats: 4 * getBeatsPerBar(song.timeSignature),
         chords: [],
         melodicNotes: [],
-        theory: {
-          pitchCollection: [],
-          gravityCenter: [],
-          suggestedChords: [],
-          melodyPrompt: "Add melodic notes to define this section.",
-          rhythmicPrompt: "Set the rhythmic contour for this section.",
-        },
+        theory: emptySectionTheory,
       };
 
       return reindexSections([...currentSections, nextSection]);
@@ -841,6 +898,7 @@ export function SongEditorWorkspace({ song }: SongEditorWorkspaceProps) {
       return;
     }
 
+    markArrangementDirty();
     const targetSectionId = pickerState.sectionId;
     const targetBarIndex = pickerState.barIndex;
     const beatsPerBar = getBeatsPerBar(song.timeSignature);
@@ -890,6 +948,7 @@ export function SongEditorWorkspace({ song }: SongEditorWorkspaceProps) {
   function handleRemoveChord(chordId: number) {
     let nextSelectedChordId: number | null = null;
 
+    markArrangementDirty();
     setSections((currentSections) =>
       reindexSections(
         currentSections.map((section) => {
@@ -923,6 +982,7 @@ export function SongEditorWorkspace({ song }: SongEditorWorkspaceProps) {
   ) {
     let nextSelectedMelodyNoteId: number | null = null;
 
+    markArrangementDirty();
     setSections((currentSections) =>
       reindexSections(
         currentSections.map((section) => {
@@ -961,6 +1021,7 @@ export function SongEditorWorkspace({ song }: SongEditorWorkspaceProps) {
     noteId: number,
     next: Pick<MelodicNoteModel, "pitch" | "startBeat" | "durationBeats">,
   ) {
+    markArrangementDirty();
     setSections((currentSections) =>
       reindexSections(
         currentSections.map((section) => {
@@ -1003,6 +1064,7 @@ export function SongEditorWorkspace({ song }: SongEditorWorkspaceProps) {
     const nextSelectedMelodyNoteId =
       selectedMelodyNoteId === noteId ? null : selectedMelodyNoteId;
 
+    markArrangementDirty();
     setSections((currentSections) =>
       reindexSections(
         currentSections.map((section) => {
@@ -1041,22 +1103,47 @@ export function SongEditorWorkspace({ song }: SongEditorWorkspaceProps) {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {[
-            `${song.masterTonalCenter} ${formatModeLabel(song.masterMode)}`,
-            `${song.tempoBpm} BPM`,
-            song.timeSignature,
-            `${sections.length} sections`,
-          ].map((item) => (
-            <span
-              key={item}
-              className="rounded-full border border-highlight/80 bg-surface px-3 py-2 text-sm font-semibold text-foreground/72"
-            >
-              {item}
-            </span>
-          ))}
+        <div className="flex max-w-xl flex-wrap justify-end gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
+            {[
+              `${song.masterTonalCenter} ${formatModeLabel(song.masterMode)}`,
+              `${song.tempoBpm} BPM`,
+              song.timeSignature,
+              `${sections.length} sections`,
+              dirty ? "Unsaved" : "Saved",
+            ].map((item) => (
+              <span
+                key={item}
+                className="rounded-full border border-highlight/80 bg-surface px-3 py-2 text-sm font-semibold text-foreground/72"
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => void handleSaveArrangement()}
+            disabled={!dirty || isSaving}
+            className="rounded-full bg-accent px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-950 transition hover:brightness-105 focus:outline-none focus:ring-4 focus:ring-accent/25 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isSaving ? "Saving..." : "Save"}
+          </button>
         </div>
       </header>
+
+      {saveMessage || saveError ? (
+        <div
+          role={saveError ? "alert" : "status"}
+          className={cn(
+            "rounded-[1.1rem] border px-4 py-3 text-sm font-semibold",
+            saveError
+              ? "border-rose-500/30 bg-rose-500/10 text-rose-900 dark:text-rose-100"
+              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-950 dark:text-emerald-100",
+          )}
+        >
+          {saveError ?? saveMessage}
+        </div>
+      ) : null}
 
       <PanelShell
         eyebrow="Structure Builder"
@@ -1464,10 +1551,12 @@ export function SongEditorWorkspace({ song }: SongEditorWorkspaceProps) {
         <div className="grid gap-6 xl:grid-cols-2">
           <TheoryPanel
             key={activeSection.id}
+            song={song}
             masterMode={song.masterMode}
             section={activeSection}
             sectionLabel={activeSectionLabel}
             selectedChord={selectedChord}
+            selectedNoteId={selectedMelodyNoteId}
           />
           <AudioPreviewPanel
             waveform={transportState.waveform}

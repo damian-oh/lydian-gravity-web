@@ -1,16 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { PanelShell } from "@/components/ui/panel-shell";
+import { useAuth } from "@/features/auth/providers/auth-provider";
 import {
   formatChordSourceLabel,
   getChordSourceKind,
 } from "@/features/song-editor/lib/chord-catalog";
+import { requestNextSteps } from "@/features/song-editor/lib/song-api";
 import type {
   SongChord,
+  SongSketchModel,
   SongSectionModel,
-} from "@/features/song-editor/lib/mock-song-data";
+} from "@/features/song-editor/lib/song-model";
 import { cn } from "@/lib/cn";
 
 const suggestionToneClassName = {
@@ -21,26 +24,94 @@ const suggestionToneClassName = {
 } as const;
 
 type TheoryPanelProps = Readonly<{
+  song: SongSketchModel;
   masterMode: string;
   section: SongSectionModel;
   sectionLabel: string;
   selectedChord: SongChord | null;
+  selectedNoteId: number | null;
 }>;
 
 export function TheoryPanel({
+  song,
   masterMode,
   section,
   sectionLabel,
   selectedChord,
+  selectedNoteId,
 }: TheoryPanelProps) {
+  const { token } = useAuth();
+  const [theory, setTheory] = useState(section.theory);
   const [activeSuggestionId, setActiveSuggestionId] = useState(
     section.theory.suggestedChords[0]?.id ?? "",
   );
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [suggestionError, setSuggestionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setTheory(section.theory);
+      setActiveSuggestionId(section.theory.suggestedChords[0]?.id ?? "");
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [section.id, section.theory]);
+
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+
+    let cancelled = false;
+    const timeoutId = window.setTimeout(() => {
+      setIsLoadingSuggestions(true);
+      setSuggestionError(null);
+
+      void requestNextSteps(
+        token,
+        song,
+        section,
+        selectedChord?.id ?? null,
+        selectedNoteId,
+      )
+        .then((nextTheory) => {
+          if (cancelled) {
+            return;
+          }
+
+          setTheory(nextTheory);
+          setActiveSuggestionId(nextTheory.suggestedChords[0]?.id ?? "");
+        })
+        .catch((error) => {
+          if (cancelled) {
+            return;
+          }
+
+          setSuggestionError(
+            error instanceof Error
+              ? error.message
+              : "Unable to load next-step suggestions.",
+          );
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setIsLoadingSuggestions(false);
+          }
+        });
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [section, selectedChord?.id, selectedNoteId, song, token]);
 
   const activeSuggestion =
-    section.theory.suggestedChords.find(
+    theory.suggestedChords.find(
       (suggestion) => suggestion.id === activeSuggestionId,
-    ) ?? section.theory.suggestedChords[0];
+    ) ?? theory.suggestedChords[0];
 
   return (
     <PanelShell
@@ -92,10 +163,20 @@ export function TheoryPanel({
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-foreground/45">
           Chord Suggestions
         </p>
-        {section.theory.suggestedChords.length > 0 ? (
+        {isLoadingSuggestions ? (
+          <div className="rounded-[1.3rem] border border-highlight/70 bg-background/55 p-4">
+            <p className="text-sm leading-6 text-muted">
+              Loading next-step suggestions...
+            </p>
+          </div>
+        ) : suggestionError ? (
+          <div className="rounded-[1.3rem] border border-rose-500/25 bg-rose-500/10 p-4 text-rose-900 dark:text-rose-100">
+            <p className="text-sm leading-6">{suggestionError}</p>
+          </div>
+        ) : theory.suggestedChords.length > 0 ? (
           <>
             <div className="flex flex-wrap gap-2">
-              {section.theory.suggestedChords.map((suggestion) => (
+              {theory.suggestedChords.map((suggestion) => (
                 <button
                   key={suggestion.id}
                   type="button"
@@ -138,10 +219,10 @@ export function TheoryPanel({
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-foreground/45">
           Melody Suggestions
         </p>
-        {section.theory.melodyPrompt ? (
+        {theory.melodyPrompt ? (
           <div className="rounded-[1.2rem] border border-highlight/70 bg-background/55 p-4">
             <p className="text-sm leading-6 text-muted">
-              {section.theory.melodyPrompt}
+              {theory.melodyPrompt}
             </p>
           </div>
         ) : (
@@ -152,6 +233,28 @@ export function TheoryPanel({
           </div>
         )}
       </div>
+
+      {theory.rhythmicPrompt ? (
+        <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-foreground/45">
+            Rhythm Suggestions
+          </p>
+          <div className="rounded-[1.2rem] border border-highlight/70 bg-background/55 p-4">
+            <p className="text-sm leading-6 text-muted">
+              {theory.rhythmicPrompt}
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      {theory.interchangeInsight ? (
+        <div className="rounded-[1.2rem] border border-amber-500/25 bg-amber-500/10 p-4 text-amber-950 dark:text-amber-100">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em]">
+            Modal Interchange
+          </p>
+          <p className="mt-2 text-sm leading-6">{theory.interchangeInsight}</p>
+        </div>
+      ) : null}
     </PanelShell>
   );
 }

@@ -26,11 +26,6 @@ const navigationItems = [
     label: "New Sketch",
     description: "Title, mode, tempo, and notes",
   },
-  {
-    href: "/songs/1",
-    label: "Editor",
-    description: "Sections, theory cues, and preview tools",
-  },
 ];
 
 function isActivePath(pathname: string, href: string) {

@@ -1,10 +1,12 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { useAppShellNavigation } from "@/components/layout/app-shell-navigation";
 import { PanelShell } from "@/components/ui/panel-shell";
+import { useAuth } from "@/features/auth/providers/auth-provider";
+import { createSong } from "@/features/song-editor/lib/song-api";
 
 type SetupDraft = {
   title: string;
@@ -89,7 +91,11 @@ function FieldLabel({
 }
 
 export function SongSetupForm() {
+  const router = useRouter();
+  const { token } = useAuth();
   const [draft, setDraft] = useState(initialDraft);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const { confirmNavigation, setNavigationGuard } = useAppShellNavigation();
   const draftIsDirty = isDraftDirty(draft);
 
@@ -106,6 +112,35 @@ export function SongSetupForm() {
       setNavigationGuard(null);
     };
   }, [draftIsDirty, setNavigationGuard]);
+
+  async function handleCreateSketch() {
+    if (!token || isSubmitting) {
+      return;
+    }
+
+    const title = draft.title.trim();
+    if (!title) {
+      setSubmitError("Title is required.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const song = await createSong(token, {
+        ...draft,
+        title,
+      });
+      setNavigationGuard(null);
+      router.push(`/songs/${song.id}`);
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : "Unable to create the sketch.",
+      );
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <div>
@@ -224,26 +259,35 @@ export function SongSetupForm() {
           />
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/songs/1"
-            scroll={false}
-            className="rounded-full bg-accent px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-950 transition hover:brightness-105 focus:outline-none focus:ring-4 focus:ring-accent/25"
+        {submitError ? (
+          <div
+            role="alert"
+            className="rounded-[1rem] border border-rose-500/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-900 dark:text-rose-100"
           >
-            Create Sketch
-          </Link>
-          <Link
-            href="/library"
-            scroll={false}
-            onClick={(event) => {
-              if (!confirmNavigation("/library")) {
-                event.preventDefault();
+            {submitError}
+          </div>
+        ) : null}
+
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => void handleCreateSketch()}
+            disabled={isSubmitting}
+            className="rounded-full bg-accent px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-950 transition hover:brightness-105 focus:outline-none focus:ring-4 focus:ring-accent/25 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isSubmitting ? "Creating..." : "Create Sketch"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (confirmNavigation("/library")) {
+                router.push("/library");
               }
             }}
             className="rounded-full border border-highlight/80 bg-surface px-5 py-3 text-sm font-semibold text-foreground/72 transition hover:border-accent/30 hover:text-foreground focus:outline-none focus:ring-4 focus:ring-accent/20"
           >
             Back to Library
-          </Link>
+          </button>
         </div>
       </PanelShell>
     </div>
