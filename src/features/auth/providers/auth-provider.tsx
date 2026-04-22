@@ -53,16 +53,13 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     setStatus("anonymous");
   }, []);
 
-  const loadCurrentUser = useCallback(
-    async (activeToken: string) => {
-      const currentUser = await getCurrentUser(activeToken);
+  const loadCurrentUser = useCallback(async (activeToken: string) => {
+    const currentUser = await getCurrentUser(activeToken);
 
-      setToken(activeToken);
-      setUser(currentUser);
-      setStatus("authenticated");
-    },
-    [],
-  );
+    setToken(activeToken);
+    setUser(currentUser);
+    setStatus("authenticated");
+  }, []);
 
   useEffect(() => {
     if (!initialToken) {

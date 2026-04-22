@@ -85,7 +85,10 @@ function getBeatsPerBar(timeSignature: string) {
   return beatsPerBar;
 }
 
-function buildTimelineSpec(totalBeats: number, timeSignature: string): TimelineSpec {
+function buildTimelineSpec(
+  totalBeats: number,
+  timeSignature: string,
+): TimelineSpec {
   const safeTotalBeats = Math.max(1, Math.ceil(totalBeats));
   const beatsPerBar = getBeatsPerBar(timeSignature);
   const barCount = Math.ceil(safeTotalBeats / beatsPerBar);
@@ -126,7 +129,7 @@ function TimelineBarHeader({
           columnTemplate ?? `repeat(${timeline.totalBeats}, minmax(0, 1fr))`,
       }}
     >
-      {timeline.bars.map((bar) => (
+      {timeline.bars.map((bar) =>
         expanded ? (
           <div
             key={bar.index}
@@ -149,8 +152,8 @@ function TimelineBarHeader({
           >
             Bar {bar.index + 1}
           </div>
-        )
-      ))}
+        ),
+      )}
     </div>
   );
 }
@@ -184,7 +187,10 @@ function buildSectionDisplayLabelMap(sections: readonly SongSectionModel[]) {
 
       return [
         section.id,
-        formatSectionDisplayLabel(section.sectionType, counts[section.sectionType]),
+        formatSectionDisplayLabel(
+          section.sectionType,
+          counts[section.sectionType],
+        ),
       ];
     }),
   );
@@ -202,7 +208,10 @@ function getMinimumSectionBeats(section: SongSectionModel) {
     0,
   );
 
-  return Math.max(1, Math.ceil(Math.max(furthestChordBeat, furthestMelodyBeat)));
+  return Math.max(
+    1,
+    Math.ceil(Math.max(furthestChordBeat, furthestMelodyBeat)),
+  );
 }
 
 function getMinimumBarCount(section: SongSectionModel, timeSignature: string) {
@@ -220,32 +229,38 @@ function reindexSections(sections: readonly SongSectionModel[]) {
 }
 
 function getNextSectionId(sections: readonly SongSectionModel[]) {
-  return sections.reduce(
-    (maxSectionId, section) => Math.max(maxSectionId, section.id),
-    0,
-  ) + 1;
+  return (
+    sections.reduce(
+      (maxSectionId, section) => Math.max(maxSectionId, section.id),
+      0,
+    ) + 1
+  );
 }
 
 function getNextChordId(sections: readonly SongSectionModel[]) {
-  return sections.reduce(
-    (maxChordId, section) =>
-      section.chords.reduce(
-        (sectionMaxChordId, chord) => Math.max(sectionMaxChordId, chord.id),
-        maxChordId,
-      ),
-    0,
-  ) + 1;
+  return (
+    sections.reduce(
+      (maxChordId, section) =>
+        section.chords.reduce(
+          (sectionMaxChordId, chord) => Math.max(sectionMaxChordId, chord.id),
+          maxChordId,
+        ),
+      0,
+    ) + 1
+  );
 }
 
 function getNextMelodicNoteId(sections: readonly SongSectionModel[]) {
-  return sections.reduce(
-    (maxNoteId, section) =>
-      section.melodicNotes.reduce(
-        (sectionMaxNoteId, note) => Math.max(sectionMaxNoteId, note.id),
-        maxNoteId,
-      ),
-    0,
-  ) + 1;
+  return (
+    sections.reduce(
+      (maxNoteId, section) =>
+        section.melodicNotes.reduce(
+          (sectionMaxNoteId, note) => Math.max(sectionMaxNoteId, note.id),
+          maxNoteId,
+        ),
+      0,
+    ) + 1
+  );
 }
 
 function sortAndReindexChords(chords: readonly SongChord[]) {
@@ -473,7 +488,9 @@ function ChordSlotCard({
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-foreground/45">
               Bar {slot.barIndex + 1}
             </p>
-            <p className="mt-3 text-lg font-semibold text-foreground">Add chord</p>
+            <p className="mt-3 text-lg font-semibold text-foreground">
+              Add chord
+            </p>
           </div>
           <span className="rounded-full border border-highlight/80 bg-surface px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-foreground/65">
             Slot
@@ -632,13 +649,15 @@ export function SongEditorWorkspace({
   onSaveArrangement,
 }: SongEditorWorkspaceProps) {
   const [sections, setSections] = useState(song.sections);
-  const [activeSectionId, setActiveSectionId] = useState(song.sections[0]?.id ?? 0);
+  const [activeSectionId, setActiveSectionId] = useState(
+    song.sections[0]?.id ?? 0,
+  );
   const [selectedChordId, setSelectedChordId] = useState<number | null>(
     song.sections[0]?.chords[0]?.id ?? null,
   );
-  const [selectedMelodyNoteId, setSelectedMelodyNoteId] = useState<number | null>(
-    song.sections[0]?.melodicNotes[0]?.id ?? null,
-  );
+  const [selectedMelodyNoteId, setSelectedMelodyNoteId] = useState<
+    number | null
+  >(song.sections[0]?.melodicNotes[0]?.id ?? null);
   const [pickerState, setPickerState] = useState<PickerState | null>(null);
   const [mobileView, setMobileView] = useState<"progression" | "melody">(
     "progression",
@@ -654,7 +673,8 @@ export function SongEditorWorkspace({
     setNavigationGuard(
       dirty
         ? {
-            message: "Leave this editor and discard unsaved arrangement changes?",
+            message:
+              "Leave this editor and discard unsaved arrangement changes?",
           }
         : null,
     );
@@ -688,15 +708,16 @@ export function SongEditorWorkspace({
 
   const activeSection =
     sections.find((section) => section.id === activeSectionId) ?? sections[0];
-  const { state: transportState, actions: transportActions } = useSectionTransport({
-    scopeKey: transportScopeKey,
-    sectionId: activeSection?.id ?? 0,
-    totalBeats: activeSection?.totalBeats ?? 1,
-    tempoBpm: song.tempoBpm,
-    timeSignature: song.timeSignature,
-    chords: activeSection?.chords ?? [],
-    melodicNotes: activeSection?.melodicNotes ?? [],
-  });
+  const { state: transportState, actions: transportActions } =
+    useSectionTransport({
+      scopeKey: transportScopeKey,
+      sectionId: activeSection?.id ?? 0,
+      totalBeats: activeSection?.totalBeats ?? 1,
+      tempoBpm: song.tempoBpm,
+      timeSignature: song.timeSignature,
+      chords: activeSection?.chords ?? [],
+      melodicNotes: activeSection?.melodicNotes ?? [],
+    });
 
   useEffect(() => {
     if (!activeSection || selectedMelodyNoteId === null) {
@@ -704,7 +725,9 @@ export function SongEditorWorkspace({
     }
 
     if (
-      !activeSection.melodicNotes.some((note) => note.id === selectedMelodyNoteId)
+      !activeSection.melodicNotes.some(
+        (note) => note.id === selectedMelodyNoteId,
+      )
     ) {
       setSelectedMelodyNoteId(null);
     }
@@ -738,13 +761,19 @@ export function SongEditorWorkspace({
     song.masterTonalCenter,
     song.masterMode,
   );
-  const chordCatalog = buildChordCatalog(song.masterTonalCenter, song.masterMode);
+  const chordCatalog = buildChordCatalog(
+    song.masterTonalCenter,
+    song.masterMode,
+  );
   const parsedSongId = Number.parseInt(song.id, 10);
   const songSketchId =
-    sections[0]?.songSketchId ?? (Number.isFinite(parsedSongId) ? parsedSongId : 1);
+    sections[0]?.songSketchId ??
+    (Number.isFinite(parsedSongId) ? parsedSongId : 1);
   const pickerSlot =
     pickerState?.sectionId === activeSection.id
-      ? activeChordSlots.find((slot) => slot.barIndex === pickerState.barIndex) ?? null
+      ? (activeChordSlots.find(
+          (slot) => slot.barIndex === pickerState.barIndex,
+        ) ?? null)
       : null;
   const pickerChord = pickerSlot?.chord ?? null;
 
@@ -763,9 +792,11 @@ export function SongEditorWorkspace({
       const savedSong = await onSaveArrangement(sections);
       setSections(savedSong.sections);
       setActiveSectionId((currentActiveSectionId) =>
-        savedSong.sections.some((section) => section.id === currentActiveSectionId)
+        savedSong.sections.some(
+          (section) => section.id === currentActiveSectionId,
+        )
           ? currentActiveSectionId
-          : savedSong.sections[0]?.id ?? 0,
+          : (savedSong.sections[0]?.id ?? 0),
       );
       setDirty(false);
       setSaveMessage("Arrangement saved.");
@@ -790,7 +821,10 @@ export function SongEditorWorkspace({
     setSelectedMelodyNoteId(nextSection.melodicNotes[0]?.id ?? null);
   }
 
-  function handleSectionTypeChange(sectionId: number, sectionType: SectionType) {
+  function handleSectionTypeChange(
+    sectionId: number,
+    sectionType: SectionType,
+  ) {
     markArrangementDirty();
     setSections((currentSections) =>
       reindexSections(
@@ -810,10 +844,15 @@ export function SongEditorWorkspace({
             return section;
           }
 
-          const minimumBarCount = getMinimumBarCount(section, song.timeSignature);
+          const minimumBarCount = getMinimumBarCount(
+            section,
+            song.timeSignature,
+          );
           const safeBarCount = Math.max(
             minimumBarCount,
-            Number.isFinite(nextBarCount) ? Math.floor(nextBarCount) : minimumBarCount,
+            Number.isFinite(nextBarCount)
+              ? Math.floor(nextBarCount)
+              : minimumBarCount,
           );
 
           return {
@@ -830,7 +869,9 @@ export function SongEditorWorkspace({
       return;
     }
 
-    const sectionIndex = sections.findIndex((section) => section.id === sectionId);
+    const sectionIndex = sections.findIndex(
+      (section) => section.id === sectionId,
+    );
 
     if (sectionIndex < 0) {
       return;
@@ -848,7 +889,9 @@ export function SongEditorWorkspace({
     }
 
     const nextActiveSection =
-      nextSections[sectionIndex] ?? nextSections[sectionIndex - 1] ?? nextSections[0];
+      nextSections[sectionIndex] ??
+      nextSections[sectionIndex - 1] ??
+      nextSections[0];
 
     handleActivateSection(nextActiveSection);
   }
@@ -873,10 +916,7 @@ export function SongEditorWorkspace({
     });
   }
 
-  function openChordPicker(
-    slot: ChordSlot,
-    defaultTab: ChordCatalogTab,
-  ) {
+  function openChordPicker(slot: ChordSlot, defaultTab: ChordCatalogTab) {
     if (slot.chord) {
       setSelectedChordId(slot.chord.id);
     }
@@ -923,7 +963,8 @@ export function SongEditorWorkspace({
 
           const nextChordId = getNextChordId(currentSections);
           const remainingChords = section.chords.filter(
-            (chord) => Math.floor(chord.startBeat / beatsPerBar) !== targetBarIndex,
+            (chord) =>
+              Math.floor(chord.startBeat / beatsPerBar) !== targetBarIndex,
           );
           const nextChord = buildSongChordFromCatalogItem(
             item,
@@ -964,7 +1005,7 @@ export function SongEditorWorkspace({
 
           nextSelectedChordId =
             selectedChordId === chordId
-              ? remainingChords[0]?.id ?? null
+              ? (remainingChords[0]?.id ?? null)
               : selectedChordId;
 
           return {
@@ -1031,7 +1072,9 @@ export function SongEditorWorkspace({
             return section;
           }
 
-          const existingNote = section.melodicNotes.find((note) => note.id === noteId);
+          const existingNote = section.melodicNotes.find(
+            (note) => note.id === noteId,
+          );
 
           if (!existingNote) {
             return section;
@@ -1204,7 +1247,9 @@ export function SongEditorWorkspace({
                           <button
                             key={option}
                             type="button"
-                            onClick={() => handleSectionTypeChange(section.id, option)}
+                            onClick={() =>
+                              handleSectionTypeChange(section.id, option)
+                            }
                             className={cn(
                               "rounded-full border px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-accent/15",
                               section.sectionType === option
@@ -1361,7 +1406,6 @@ export function SongEditorWorkspace({
             );
           })}
         </div>
-
       </PanelShell>
 
       <div className="space-y-6">
@@ -1446,7 +1490,10 @@ export function SongEditorWorkspace({
 
           <div className="hidden lg:block">
             <div className="-mx-1 overflow-x-auto px-1 pb-2">
-              <div className="space-y-4" style={{ minWidth: desktopTimelineMinWidth }}>
+              <div
+                className="space-y-4"
+                style={{ minWidth: desktopTimelineMinWidth }}
+              >
                 <TimelineBarHeader
                   timeline={activeTimeline}
                   columnTemplate={desktopTimelineColumns}
@@ -1533,7 +1580,10 @@ export function SongEditorWorkspace({
           eyebrow="Melody Lane"
           title="Melodic note sketch"
           description="Draw, move, resize, and remove quarter-beat notes while reading their gravity against the active harmony."
-          className={cn(mobileView === "melody" ? "block" : "hidden", "lg:block")}
+          className={cn(
+            mobileView === "melody" ? "block" : "hidden",
+            "lg:block",
+          )}
           bodyClassName="space-y-5"
         >
           <MelodyLaneEditor

@@ -2,7 +2,12 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useLayoutEffect, useState, type MouseEvent, type ReactNode } from "react";
+import {
+  useLayoutEffect,
+  useState,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 
 import {
   AppShellNavigationContext,
@@ -30,7 +35,9 @@ const navigationItems = [
 
 function isActivePath(pathname: string, href: string) {
   const normalizedPathname =
-    pathname !== "/" && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+    pathname !== "/" && pathname.endsWith("/")
+      ? pathname.slice(0, -1)
+      : pathname;
   const normalizedHref =
     href !== "/" && href.endsWith("/") ? href.slice(0, -1) : href;
 
@@ -123,7 +130,9 @@ function NavigationLink({
               active ? "bg-accent" : "bg-highlight group-hover:bg-accent/70",
             )}
           />
-          <span className="text-sm font-semibold tracking-[0.06em]">{label}</span>
+          <span className="text-sm font-semibold tracking-[0.06em]">
+            {label}
+          </span>
         </div>
         <p className="text-sm leading-5 text-muted">{description}</p>
       </div>

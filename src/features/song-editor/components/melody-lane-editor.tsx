@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 
 import {
   midiToNoteName,
@@ -40,7 +45,9 @@ type MelodyLaneEditorProps = Readonly<{
   selectedNoteId: number | null;
   gravityByNoteId: ReadonlyMap<number, MelodyGravityResult>;
   onSelectNote: (noteId: number | null) => void;
-  onAddNote: (draft: Pick<MelodicNoteModel, "pitch" | "startBeat" | "durationBeats">) => void;
+  onAddNote: (
+    draft: Pick<MelodicNoteModel, "pitch" | "startBeat" | "durationBeats">,
+  ) => void;
   onUpdateNote: (
     noteId: number,
     next: Pick<MelodicNoteModel, "pitch" | "startBeat" | "durationBeats">,
@@ -82,7 +89,11 @@ type ResizeEndGesture = Readonly<{
   currentDurationCells: number;
 }>;
 
-type MelodyGesture = DrawGesture | MoveGesture | ResizeStartGesture | ResizeEndGesture;
+type MelodyGesture =
+  | DrawGesture
+  | MoveGesture
+  | ResizeStartGesture
+  | ResizeEndGesture;
 
 const minPitch = 24;
 const maxPitch = 107;
@@ -95,14 +106,12 @@ const beatWidthLevels = [56, 72, 88] as const;
 const gravityToneClassName = {
   anchor:
     "border-emerald-500/35 bg-emerald-500/18 text-emerald-950 dark:text-emerald-100",
-  stable:
-    "border-sky-500/35 bg-sky-500/16 text-sky-950 dark:text-sky-100",
+  stable: "border-sky-500/35 bg-sky-500/16 text-sky-950 dark:text-sky-100",
   color:
     "border-amber-500/35 bg-amber-500/16 text-amber-950 dark:text-amber-100",
   tension:
     "border-orange-500/35 bg-orange-500/16 text-orange-950 dark:text-orange-100",
-  outside:
-    "border-rose-500/35 bg-rose-500/16 text-rose-950 dark:text-rose-100",
+  outside: "border-rose-500/35 bg-rose-500/16 text-rose-950 dark:text-rose-100",
 } as const;
 
 function clamp(value: number, minimum: number, maximum: number) {
@@ -118,7 +127,9 @@ function beatToCell(beat: number) {
 }
 
 function formatBeatValue(value: number) {
-  return Number.isInteger(value) ? `${value}` : value.toFixed(2).replace(/0$/, "");
+  return Number.isInteger(value)
+    ? `${value}`
+    : value.toFixed(2).replace(/0$/, "");
 }
 
 function isBlackKey(pitch: number) {
@@ -129,7 +140,9 @@ function getPitchTop(pitch: number) {
   return (maxPitch - pitch) * rowHeight;
 }
 
-function getNoteFrame(note: Pick<MelodicNoteModel, "pitch" | "startBeat" | "durationBeats">) {
+function getNoteFrame(
+  note: Pick<MelodicNoteModel, "pitch" | "startBeat" | "durationBeats">,
+) {
   return {
     startCell: beatToCell(note.startBeat),
     durationCells: Math.max(1, beatToCell(note.durationBeats)),
@@ -149,7 +162,9 @@ export function MelodyLaneEditor({
   onUpdateNote,
   onRemoveNote,
 }: MelodyLaneEditorProps) {
-  const [interactionMode, setInteractionMode] = useState<"draw" | "select">("draw");
+  const [interactionMode, setInteractionMode] = useState<"draw" | "select">(
+    "draw",
+  );
   const [zoomIndex, setZoomIndex] = useState(1);
   const [scrollTop, setScrollTop] = useState(0);
   const [gesture, setGesture] = useState<MelodyGesture | null>(null);
@@ -166,7 +181,7 @@ export function MelodyLaneEditor({
     melodicNotes.find((note) => note.id === selectedNoteId) ?? null;
   const selectedGravity =
     selectedNote && gravityByNoteId.has(selectedNote.id)
-      ? gravityByNoteId.get(selectedNote.id) ?? null
+      ? (gravityByNoteId.get(selectedNote.id) ?? null)
       : null;
 
   useEffect(() => {
@@ -186,7 +201,10 @@ export function MelodyLaneEditor({
       0,
       getPitchTop(focusPitch) - contentViewportHeight / 2 + rowHeight / 2,
     );
-    scroller.scrollLeft = Math.max(0, focusBeat * beatWidth - scroller.clientWidth / 3);
+    scroller.scrollLeft = Math.max(
+      0,
+      focusBeat * beatWidth - scroller.clientWidth / 3,
+    );
     setScrollTop(scroller.scrollTop);
   }, [beatWidth, melodicNotes, sectionId, selectedNote]);
 
@@ -240,8 +258,16 @@ export function MelodyLaneEditor({
       const relativeY = clamp(clientY - rect.top, 0, gridHeight - 1);
 
       return {
-        cell: clamp(Math.floor(relativeX / subdivisionWidth), 0, totalCells - 1),
-        pitch: clamp(maxPitch - Math.floor(relativeY / rowHeight), minPitch, maxPitch),
+        cell: clamp(
+          Math.floor(relativeX / subdivisionWidth),
+          0,
+          totalCells - 1,
+        ),
+        pitch: clamp(
+          maxPitch - Math.floor(relativeY / rowHeight),
+          minPitch,
+          maxPitch,
+        ),
       };
     }
 
@@ -270,7 +296,8 @@ export function MelodyLaneEditor({
               totalCells - currentGesture.durationCells,
             );
             const nextPitch = clamp(
-              currentGesture.pitch + (location.pitch - currentGesture.anchorPitch),
+              currentGesture.pitch +
+                (location.pitch - currentGesture.anchorPitch),
               minPitch,
               maxPitch,
             );
@@ -284,14 +311,21 @@ export function MelodyLaneEditor({
           case "resizeStart":
             return {
               ...currentGesture,
-              currentStartCell: clamp(location.cell, 0, currentGesture.endCell - 1),
+              currentStartCell: clamp(
+                location.cell,
+                0,
+                currentGesture.endCell - 1,
+              ),
             };
           case "resizeEnd":
             return {
               ...currentGesture,
               currentDurationCells:
-                clamp(location.cell + 1, currentGesture.startCell + 1, totalCells) -
-                currentGesture.startCell,
+                clamp(
+                  location.cell + 1,
+                  currentGesture.startCell + 1,
+                  totalCells,
+                ) - currentGesture.startCell,
             };
           default:
             return currentGesture;
@@ -302,8 +336,12 @@ export function MelodyLaneEditor({
     function handlePointerUp() {
       switch (activeGesture.kind) {
         case "draw": {
-          const startCell = Math.min(activeGesture.startCell, activeGesture.currentCell);
-          const endCell = Math.max(activeGesture.startCell, activeGesture.currentCell) + 1;
+          const startCell = Math.min(
+            activeGesture.startCell,
+            activeGesture.currentCell,
+          );
+          const endCell =
+            Math.max(activeGesture.startCell, activeGesture.currentCell) + 1;
 
           onAddNote({
             pitch: activeGesture.pitch,
@@ -430,7 +468,11 @@ export function MelodyLaneEditor({
 
     return {
       cell: clamp(Math.floor(relativeX / subdivisionWidth), 0, totalCells - 1),
-      pitch: clamp(maxPitch - Math.floor(relativeY / rowHeight), minPitch, maxPitch),
+      pitch: clamp(
+        maxPitch - Math.floor(relativeY / rowHeight),
+        minPitch,
+        maxPitch,
+      ),
     };
   }
 
@@ -445,7 +487,9 @@ export function MelodyLaneEditor({
             <button
               key={option.key}
               type="button"
-              onClick={() => setInteractionMode(option.key as "draw" | "select")}
+              onClick={() =>
+                setInteractionMode(option.key as "draw" | "select")
+              }
               className={cn(
                 "rounded-full border px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-accent/15",
                 interactionMode === option.key
@@ -464,7 +508,11 @@ export function MelodyLaneEditor({
           </span>
           <button
             type="button"
-            onClick={() => setZoomIndex((currentZoom) => clamp(currentZoom - 1, 0, beatWidthLevels.length - 1))}
+            onClick={() =>
+              setZoomIndex((currentZoom) =>
+                clamp(currentZoom - 1, 0, beatWidthLevels.length - 1),
+              )
+            }
             disabled={zoomIndex === 0}
             className="rounded-full border border-highlight/80 bg-surface px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-foreground/72 transition hover:border-accent/30 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
           >
@@ -472,7 +520,11 @@ export function MelodyLaneEditor({
           </button>
           <button
             type="button"
-            onClick={() => setZoomIndex((currentZoom) => clamp(currentZoom + 1, 0, beatWidthLevels.length - 1))}
+            onClick={() =>
+              setZoomIndex((currentZoom) =>
+                clamp(currentZoom + 1, 0, beatWidthLevels.length - 1),
+              )
+            }
             disabled={zoomIndex === beatWidthLevels.length - 1}
             className="rounded-full border border-highlight/80 bg-surface px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-foreground/72 transition hover:border-accent/30 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
           >
@@ -546,7 +598,9 @@ export function MelodyLaneEditor({
                 ref={gridBodyRef}
                 className={cn(
                   "relative select-none",
-                  interactionMode === "draw" ? "cursor-crosshair" : "cursor-default",
+                  interactionMode === "draw"
+                    ? "cursor-crosshair"
+                    : "cursor-default",
                 )}
                 style={{
                   height: gridHeight,
@@ -587,7 +641,8 @@ export function MelodyLaneEditor({
                         width:
                           Math.min(
                             timeline.beatsPerBar,
-                            timeline.totalBeats - barIndex * timeline.beatsPerBar,
+                            timeline.totalBeats -
+                              barIndex * timeline.beatsPerBar,
                           ) * beatWidth,
                       }}
                     />
@@ -746,7 +801,8 @@ export function MelodyLaneEditor({
                                   kind: "resizeStart",
                                   noteId: note.id,
                                   pitch: frame.pitch,
-                                  endCell: frame.startCell + frame.durationCells,
+                                  endCell:
+                                    frame.startCell + frame.durationCells,
                                   currentStartCell: frame.startCell,
                                 });
                               }}

@@ -175,7 +175,9 @@ function mapSuggestion(suggestion: ApiChordSuggestion): ChordSuggestion {
   };
 }
 
-export function mapNextStepResponse(response: ApiNextStepResponse): SectionTheoryModel {
+export function mapNextStepResponse(
+  response: ApiNextStepResponse,
+): SectionTheoryModel {
   return {
     pitchCollection: response.pitch_collection,
     gravityCenter: response.gravity_center,
@@ -273,44 +275,47 @@ export async function requestNextSteps(
   selectedChordId: number | null,
   selectedNoteId: number | null,
 ) {
-  const response = await apiFetch<ApiNextStepResponse>("/suggestions/next-steps", {
-    method: "POST",
-    token,
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      master_tonal_center: song.masterTonalCenter,
-      master_mode: song.masterMode,
-      selected_chord_id: selectedChordId,
-      selected_note_id: selectedNoteId,
-      active_section: {
-        section_type: section.sectionType,
-        label: section.label,
-        order_index: section.orderIndex,
-        total_beats: section.totalBeats,
-        chords: section.chords.map((chord) => ({
-          id: chord.id,
-          section_id: chord.sectionId,
-          order_index: chord.orderIndex,
-          root: chord.root,
-          quality: chord.quality,
-          chord_name: chord.chordName,
-          notes: chord.notes,
-          start_beat: chord.startBeat,
-          duration_beats: chord.durationBeats,
-          parent_mode: chord.parentMode,
-        })),
-        melodic_notes: section.melodicNotes.map((note) => ({
-          id: note.id,
-          section_id: note.sectionId,
-          pitch: note.pitch,
-          start_beat: note.startBeat,
-          duration_beats: note.durationBeats,
-        })),
+  const response = await apiFetch<ApiNextStepResponse>(
+    "/suggestions/next-steps",
+    {
+      method: "POST",
+      token,
+      headers: {
+        "Content-Type": "application/json",
       },
-    }),
-  });
+      body: JSON.stringify({
+        master_tonal_center: song.masterTonalCenter,
+        master_mode: song.masterMode,
+        selected_chord_id: selectedChordId,
+        selected_note_id: selectedNoteId,
+        active_section: {
+          section_type: section.sectionType,
+          label: section.label,
+          order_index: section.orderIndex,
+          total_beats: section.totalBeats,
+          chords: section.chords.map((chord) => ({
+            id: chord.id,
+            section_id: chord.sectionId,
+            order_index: chord.orderIndex,
+            root: chord.root,
+            quality: chord.quality,
+            chord_name: chord.chordName,
+            notes: chord.notes,
+            start_beat: chord.startBeat,
+            duration_beats: chord.durationBeats,
+            parent_mode: chord.parentMode,
+          })),
+          melodic_notes: section.melodicNotes.map((note) => ({
+            id: note.id,
+            section_id: note.sectionId,
+            pitch: note.pitch,
+            start_beat: note.startBeat,
+            duration_beats: note.durationBeats,
+          })),
+        },
+      }),
+    },
+  );
 
   return mapNextStepResponse(response);
 }

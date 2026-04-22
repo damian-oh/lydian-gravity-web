@@ -26,9 +26,7 @@ export function LoginCard({
       footer={
         <p className="text-sm text-foreground/65">
           Need an account?{" "}
-          <AuthTextLink href="/register">
-            Register
-          </AuthTextLink>
+          <AuthTextLink href="/register">Register</AuthTextLink>
         </p>
       }
     >

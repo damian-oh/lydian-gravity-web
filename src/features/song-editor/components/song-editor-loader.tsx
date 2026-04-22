@@ -16,7 +16,9 @@ import { SongEditorWorkspace } from "./song-editor-workspace";
 export function SongEditorLoader({ songId }: Readonly<{ songId: string }>) {
   const { token } = useAuth();
   const [song, setSong] = useState<SongSketchModel | null>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

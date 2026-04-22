@@ -1,6 +1,9 @@
 import { useId, type ComponentPropsWithoutRef } from "react";
 
-type AuthInputFieldProps = Omit<ComponentPropsWithoutRef<"input">, "className"> &
+type AuthInputFieldProps = Omit<
+  ComponentPropsWithoutRef<"input">,
+  "className"
+> &
   Readonly<{
     label: string;
     hint?: string;

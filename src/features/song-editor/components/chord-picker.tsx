@@ -25,7 +25,10 @@ const tabLabels: Readonly<Record<ChordCatalogTab, string>> = {
   modalInterchange: "Modal Interchange",
 };
 
-function isCurrentChordMatch(item: ChordCatalogItem, currentChord: SongChord | null) {
+function isCurrentChordMatch(
+  item: ChordCatalogItem,
+  currentChord: SongChord | null,
+) {
   if (!currentChord) {
     return false;
   }
@@ -60,7 +63,9 @@ export function ChordPicker({
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-foreground/45">
             Chord Picker
           </p>
-          <p className="mt-2 text-lg font-semibold text-foreground">{slotLabel}</p>
+          <p className="mt-2 text-lg font-semibold text-foreground">
+            {slotLabel}
+          </p>
         </div>
 
         <button
@@ -98,7 +103,9 @@ export function ChordPicker({
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-foreground">{group.label}</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {group.label}
+                </p>
                 {group.description ? (
                   <p className="mt-1 text-sm leading-6 text-muted">
                     {group.description}

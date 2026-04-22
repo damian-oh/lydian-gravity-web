@@ -10,9 +10,7 @@ export function RegistrationCard() {
       footer={
         <p className="text-sm text-foreground/65">
           Already have an account?{" "}
-          <AuthTextLink href="/login">
-            Sign In
-          </AuthTextLink>
+          <AuthTextLink href="/login">Sign In</AuthTextLink>
         </p>
       }
     >

@@ -71,7 +71,11 @@ export async function apiFetch<T>(
     const body = await parseResponseBody(response);
 
     if (!response.ok) {
-      throw new ApiError(response.status, getErrorMessage(response.status, body), body);
+      throw new ApiError(
+        response.status,
+        getErrorMessage(response.status, body),
+        body,
+      );
     }
 
     return body as T;

@@ -235,7 +235,11 @@ export function useSectionTransport({
   }, []);
 
   const playToneFrequencies = useCallback(
-    (frequencies: readonly number[], durationSeconds: number, gainMultiplier = 1) => {
+    (
+      frequencies: readonly number[],
+      durationSeconds: number,
+      gainMultiplier = 1,
+    ) => {
       if (frequencies.length === 0 || typeof window === "undefined") {
         return;
       }
@@ -249,8 +253,7 @@ export function useSectionTransport({
         return;
       }
 
-      const audioContext =
-        audioContextRef.current ?? new AudioContextCtor();
+      const audioContext = audioContextRef.current ?? new AudioContextCtor();
       audioContextRef.current = audioContext;
 
       if (audioContext.state === "suspended") {
@@ -342,7 +345,11 @@ export function useSectionTransport({
           continue;
         }
 
-        playToneFrequencies([beat % beatsPerBar === 0 ? 1046.5 : 784], 0.055, 0.16);
+        playToneFrequencies(
+          [beat % beatsPerBar === 0 ? 1046.5 : 784],
+          0.055,
+          0.16,
+        );
         eventKeys.add(eventKey);
       }
     },
@@ -394,7 +401,8 @@ export function useSectionTransport({
         if (loopEnabled) {
           triggerPlaybackEvents(baseCurrentBeat, safeTotalBeats);
           triggeredEventKeysRef.current.clear();
-          const wrappedBeat = safeTotalBeats === 0 ? 0 : nextBeat % safeTotalBeats;
+          const wrappedBeat =
+            safeTotalBeats === 0 ? 0 : nextBeat % safeTotalBeats;
 
           triggerPlaybackEvents(0, wrappedBeat);
           currentBeatRef.current = wrappedBeat;
@@ -477,7 +485,16 @@ export function useSectionTransport({
       setWaveform: updateWaveform,
       setMasterLevel: updateMasterLevel,
     }),
-    [pause, play, seek, stop, toggleLoop, toggleMetronome, updateMasterLevel, updateWaveform],
+    [
+      pause,
+      play,
+      seek,
+      stop,
+      toggleLoop,
+      toggleMetronome,
+      updateMasterLevel,
+      updateWaveform,
+    ],
   );
 
   return {

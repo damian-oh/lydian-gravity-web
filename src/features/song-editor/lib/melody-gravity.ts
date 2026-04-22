@@ -115,41 +115,15 @@ function formatModeLabel(mode: string) {
 }
 
 function getModeIntervals(mode: string) {
-  return modeIntervalsByName[(supportedModes.includes(mode as ModeName)
-    ? mode
-    : "ionian") as ModeName];
+  return modeIntervalsByName[
+    (supportedModes.includes(mode as ModeName) ? mode : "ionian") as ModeName
+  ];
 }
 
 function getPreferredChromatic(tonalCenter: string) {
   return tonalCenter.includes("b") || flatPreferredTonics.has(tonalCenter)
-    ? [
-        "C",
-        "Db",
-        "D",
-        "Eb",
-        "E",
-        "F",
-        "Gb",
-        "G",
-        "Ab",
-        "A",
-        "Bb",
-        "B",
-      ]
-    : [
-        "C",
-        "C#",
-        "D",
-        "D#",
-        "E",
-        "F",
-        "F#",
-        "G",
-        "G#",
-        "A",
-        "A#",
-        "B",
-      ];
+    ? ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
+    : ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 }
 
 function getNoteAtInterval(tonalCenter: string, semitoneOffset: number) {
@@ -161,7 +135,10 @@ function getNoteAtInterval(tonalCenter: string, semitoneOffset: number) {
 
 function buildModePitchCollection(tonalCenter: string, mode: string) {
   return new Set(
-    getModeIntervals(mode).map((interval) => noteToSemitone[getNoteAtInterval(tonalCenter, interval)] ?? 0),
+    getModeIntervals(mode).map(
+      (interval) =>
+        noteToSemitone[getNoteAtInterval(tonalCenter, interval)] ?? 0,
+    ),
   );
 }
 
@@ -183,7 +160,9 @@ function getClosestDistanceToSet(
 }
 
 function getIntervalLabel(fromSemitone: number, toSemitone: number) {
-  return intervalLabelBySemitone[normalizeSemitone(toSemitone - fromSemitone)] ?? "1";
+  return (
+    intervalLabelBySemitone[normalizeSemitone(toSemitone - fromSemitone)] ?? "1"
+  );
 }
 
 function findSupportingChord(chords: readonly SongChord[], startBeat: number) {
@@ -224,15 +203,23 @@ export function analyzeMelodyNoteGravity(
     ? pitchClassToSemitone(supportingChord.root)
     : tonicSemitone;
   const chordToneSemitones = new Set(
-    supportingChord?.notes.map((chordNote) => pitchClassToSemitone(chordNote)) ?? [],
+    supportingChord?.notes.map((chordNote) =>
+      pitchClassToSemitone(chordNote),
+    ) ?? [],
   );
-  const scaleSemitones = buildModePitchCollection(masterTonalCenter, masterMode);
+  const scaleSemitones = buildModePitchCollection(
+    masterTonalCenter,
+    masterMode,
+  );
   const inChord = chordToneSemitones.has(pitchSemitone);
   const inScale = scaleSemitones.has(pitchSemitone);
   const isTonic = pitchSemitone === tonicSemitone;
   const isChordRoot =
     supportingChord !== null && pitchSemitone === supportingChordRootSemitone;
-  const closestScaleDistance = getClosestDistanceToSet(pitchSemitone, scaleSemitones);
+  const closestScaleDistance = getClosestDistanceToSet(
+    pitchSemitone,
+    scaleSemitones,
+  );
   const closestChordDistance =
     chordToneSemitones.size > 0
       ? getClosestDistanceToSet(pitchSemitone, chordToneSemitones)
@@ -262,7 +249,10 @@ export function analyzeMelodyNoteGravity(
       gravityClass: "anchor",
       score: 92,
       label: "Chord anchor",
-      intervalToChord: getIntervalLabel(supportingChordRootSemitone, pitchSemitone),
+      intervalToChord: getIntervalLabel(
+        supportingChordRootSemitone,
+        pitchSemitone,
+      ),
       intervalToTonic: getIntervalLabel(tonicSemitone, pitchSemitone),
       explanation: `${pitchClass} locks to the root of ${supportingChord?.chordName}, giving the line a grounded vertical landing even away from the tonic.`,
     };
@@ -275,7 +265,10 @@ export function analyzeMelodyNoteGravity(
       gravityClass: "stable",
       score: 82,
       label: "Chord tone",
-      intervalToChord: getIntervalLabel(supportingChordRootSemitone, pitchSemitone),
+      intervalToChord: getIntervalLabel(
+        supportingChordRootSemitone,
+        pitchSemitone,
+      ),
       intervalToTonic: getIntervalLabel(tonicSemitone, pitchSemitone),
       explanation: `${pitchClass} belongs to ${supportingChord?.chordName ?? "the active harmony"}, so it reads as structurally stable.`,
     };

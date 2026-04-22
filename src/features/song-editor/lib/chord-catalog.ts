@@ -23,7 +23,9 @@ export type ChordCatalogGroup = Readonly<{
   items: readonly ChordCatalogItem[];
 }>;
 
-export type ChordCatalog = Readonly<Record<ChordCatalogTab, readonly ChordCatalogGroup[]>>;
+export type ChordCatalog = Readonly<
+  Record<ChordCatalogTab, readonly ChordCatalogGroup[]>
+>;
 
 type ModeName =
   | "lydian"
@@ -162,9 +164,9 @@ function normalizeSemitone(value: number) {
 }
 
 function getModeIntervals(mode: string) {
-  return modeIntervalsByName[(supportedModes.includes(mode as ModeName)
-    ? mode
-    : "ionian") as ModeName];
+  return modeIntervalsByName[
+    (supportedModes.includes(mode as ModeName) ? mode : "ionian") as ModeName
+  ];
 }
 
 function getNoteAtInterval(
@@ -205,7 +207,11 @@ function getSeventhQuality(intervals: readonly number[]): SeventhChordQuality {
   return "min7b5";
 }
 
-function getStackInterval(scale: readonly number[], degreeIndex: number, step: number) {
+function getStackInterval(
+  scale: readonly number[],
+  degreeIndex: number,
+  step: number,
+) {
   const nextIndex = degreeIndex + step;
   const wrappedIndex = nextIndex % scale.length;
   const octaveShift = nextIndex >= scale.length ? 12 : 0;
@@ -218,7 +224,9 @@ function buildChordNotes(
   quality: SeventhChordQuality,
   chromatic = getPreferredChromatic(root),
 ) {
-  const qualityIntervals: Readonly<Record<SeventhChordQuality, readonly number[]>> = {
+  const qualityIntervals: Readonly<
+    Record<SeventhChordQuality, readonly number[]>
+  > = {
     maj7: [0, 4, 7, 11],
     "7": [0, 4, 7, 10],
     min7: [0, 3, 7, 10],
@@ -230,7 +238,10 @@ function buildChordNotes(
   );
 }
 
-function buildModeSeventhChords(tonalCenter: string, mode: string): readonly BuiltScaleChord[] {
+function buildModeSeventhChords(
+  tonalCenter: string,
+  mode: string,
+): readonly BuiltScaleChord[] {
   const chromatic = getPreferredChromatic(tonalCenter);
   const scale = getModeIntervals(mode);
 
@@ -271,7 +282,10 @@ function buildSecondaryDominant(
     quality,
     notes: buildChordNotes(dominantRoot, quality, chromatic),
     parentMode: "secondary dominant",
-    badges: [`V/${targetChord.degreeLabel}`, `targets ${targetChord.chordName}`],
+    badges: [
+      `V/${targetChord.degreeLabel}`,
+      `targets ${targetChord.chordName}`,
+    ],
   };
 }
 
@@ -338,7 +352,8 @@ export function buildChordCatalog(
     {
       id: "secondary-dominants",
       label: "Secondary Dominants",
-      description: "Dominant chords that tonicize another degree of the current mode.",
+      description:
+        "Dominant chords that tonicize another degree of the current mode.",
       items: diatonicChords
         .slice(1)
         .map((targetChord) =>

@@ -61,8 +61,7 @@ export function TransportBar({
   transport,
   actions,
 }: TransportBarProps) {
-  const playButtonLabel =
-    transport.status === "playing" ? "Pause" : "Play";
+  const playButtonLabel = transport.status === "playing" ? "Pause" : "Play";
   const displayPosition = getDisplayBarAndBeat(
     transport.currentBeat,
     transport.totalBeats,
@@ -177,7 +176,10 @@ export function TransportBar({
               Section Playhead
             </p>
             <p className="text-sm font-semibold text-muted">
-              Beat {formatBeatValue(Math.min(transport.currentBeat + 1, transport.totalBeats))}{" "}
+              Beat{" "}
+              {formatBeatValue(
+                Math.min(transport.currentBeat + 1, transport.totalBeats),
+              )}{" "}
               of {transport.totalBeats}
             </p>
           </div>

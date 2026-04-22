@@ -42,7 +42,9 @@ export function AuthCard({
           </div>
 
           {footer ? (
-            <footer className="border-t border-highlight/80 pt-5">{footer}</footer>
+            <footer className="border-t border-highlight/80 pt-5">
+              {footer}
+            </footer>
           ) : null}
         </div>
       </div>

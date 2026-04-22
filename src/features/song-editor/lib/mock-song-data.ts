@@ -134,12 +134,36 @@ export const demoSong: SongSketchModel = {
         },
       ],
       melodicNotes: [
-        { id: 2001, sectionId: 101, pitch: 67, startBeat: 0, durationBeats: 1.5 },
-        { id: 2002, sectionId: 101, pitch: 69, startBeat: 1.5, durationBeats: 1 },
+        {
+          id: 2001,
+          sectionId: 101,
+          pitch: 67,
+          startBeat: 0,
+          durationBeats: 1.5,
+        },
+        {
+          id: 2002,
+          sectionId: 101,
+          pitch: 69,
+          startBeat: 1.5,
+          durationBeats: 1,
+        },
         { id: 2003, sectionId: 101, pitch: 71, startBeat: 3, durationBeats: 1 },
         { id: 2004, sectionId: 101, pitch: 74, startBeat: 4, durationBeats: 2 },
-        { id: 2005, sectionId: 101, pitch: 72, startBeat: 8, durationBeats: 1.5 },
-        { id: 2006, sectionId: 101, pitch: 69, startBeat: 12, durationBeats: 2 },
+        {
+          id: 2005,
+          sectionId: 101,
+          pitch: 72,
+          startBeat: 8,
+          durationBeats: 1.5,
+        },
+        {
+          id: 2006,
+          sectionId: 101,
+          pitch: 69,
+          startBeat: 12,
+          durationBeats: 2,
+        },
       ],
       theory: {
         pitchCollection: ["C", "D", "E", "F#", "G", "A", "B"],
@@ -148,19 +172,22 @@ export const demoSong: SongSketchModel = {
           {
             id: "verse-1",
             chordName: "Em7",
-            reason: "Keeps the raised fourth in play while softening the landing.",
+            reason:
+              "Keeps the raised fourth in play while softening the landing.",
             tension: "grounded",
           },
           {
             id: "verse-2",
             chordName: "Bm7",
-            reason: "Adds lift before the pre-chorus without leaving the parent mode.",
+            reason:
+              "Adds lift before the pre-chorus without leaving the parent mode.",
             tension: "lift",
           },
           {
             id: "verse-3",
             chordName: "F",
-            reason: "Borrowed color if you want the verse to darken for one bar.",
+            reason:
+              "Borrowed color if you want the verse to darken for one bar.",
             tension: "borrowed",
           },
         ],
@@ -233,9 +260,27 @@ export const demoSong: SongSketchModel = {
         { id: 2101, sectionId: 102, pitch: 69, startBeat: 0, durationBeats: 1 },
         { id: 2102, sectionId: 102, pitch: 71, startBeat: 2, durationBeats: 1 },
         { id: 2103, sectionId: 102, pitch: 74, startBeat: 4, durationBeats: 2 },
-        { id: 2104, sectionId: 102, pitch: 76, startBeat: 8, durationBeats: 1.5 },
-        { id: 2105, sectionId: 102, pitch: 74, startBeat: 10, durationBeats: 1 },
-        { id: 2106, sectionId: 102, pitch: 72, startBeat: 13, durationBeats: 2 },
+        {
+          id: 2104,
+          sectionId: 102,
+          pitch: 76,
+          startBeat: 8,
+          durationBeats: 1.5,
+        },
+        {
+          id: 2105,
+          sectionId: 102,
+          pitch: 74,
+          startBeat: 10,
+          durationBeats: 1,
+        },
+        {
+          id: 2106,
+          sectionId: 102,
+          pitch: 72,
+          startBeat: 13,
+          durationBeats: 2,
+        },
       ],
       theory: {
         pitchCollection: ["C", "D", "E", "F#", "G", "A", "B"],
@@ -250,7 +295,8 @@ export const demoSong: SongSketchModel = {
           {
             id: "pre-2",
             chordName: "F",
-            reason: "Parallel Ionian borrow intensifies the arrival into chorus.",
+            reason:
+              "Parallel Ionian borrow intensifies the arrival into chorus.",
             tension: "borrowed",
           },
           {
@@ -329,9 +375,27 @@ export const demoSong: SongSketchModel = {
         { id: 2201, sectionId: 103, pitch: 72, startBeat: 0, durationBeats: 1 },
         { id: 2202, sectionId: 103, pitch: 76, startBeat: 1, durationBeats: 2 },
         { id: 2203, sectionId: 103, pitch: 78, startBeat: 4, durationBeats: 2 },
-        { id: 2204, sectionId: 103, pitch: 79, startBeat: 8, durationBeats: 1.5 },
-        { id: 2205, sectionId: 103, pitch: 76, startBeat: 10.5, durationBeats: 1.5 },
-        { id: 2206, sectionId: 103, pitch: 74, startBeat: 13, durationBeats: 2 },
+        {
+          id: 2204,
+          sectionId: 103,
+          pitch: 79,
+          startBeat: 8,
+          durationBeats: 1.5,
+        },
+        {
+          id: 2205,
+          sectionId: 103,
+          pitch: 76,
+          startBeat: 10.5,
+          durationBeats: 1.5,
+        },
+        {
+          id: 2206,
+          sectionId: 103,
+          pitch: 74,
+          startBeat: 13,
+          durationBeats: 2,
+        },
       ],
       theory: {
         pitchCollection: ["C", "D", "E", "F#", "G", "A", "B"],
@@ -340,7 +404,8 @@ export const demoSong: SongSketchModel = {
           {
             id: "chorus-1",
             chordName: "Emin7",
-            reason: "Lets the chorus stay airborne while preserving the tonal center.",
+            reason:
+              "Lets the chorus stay airborne while preserving the tonal center.",
             tension: "grounded",
           },
           {
@@ -420,12 +485,36 @@ export const demoSong: SongSketchModel = {
         },
       ],
       melodicNotes: [
-        { id: 2301, sectionId: 104, pitch: 71, startBeat: 0, durationBeats: 1.5 },
+        {
+          id: 2301,
+          sectionId: 104,
+          pitch: 71,
+          startBeat: 0,
+          durationBeats: 1.5,
+        },
         { id: 2302, sectionId: 104, pitch: 74, startBeat: 2, durationBeats: 1 },
-        { id: 2303, sectionId: 104, pitch: 76, startBeat: 4, durationBeats: 1.5 },
+        {
+          id: 2303,
+          sectionId: 104,
+          pitch: 76,
+          startBeat: 4,
+          durationBeats: 1.5,
+        },
         { id: 2304, sectionId: 104, pitch: 77, startBeat: 8, durationBeats: 2 },
-        { id: 2305, sectionId: 104, pitch: 74, startBeat: 11, durationBeats: 1 },
-        { id: 2306, sectionId: 104, pitch: 72, startBeat: 13, durationBeats: 2 },
+        {
+          id: 2305,
+          sectionId: 104,
+          pitch: 74,
+          startBeat: 11,
+          durationBeats: 1,
+        },
+        {
+          id: 2306,
+          sectionId: 104,
+          pitch: 72,
+          startBeat: 13,
+          durationBeats: 2,
+        },
       ],
       theory: {
         pitchCollection: ["C", "D", "E", "F#", "G", "A", "B"],
@@ -434,13 +523,15 @@ export const demoSong: SongSketchModel = {
           {
             id: "bridge-1",
             chordName: "Fmaj7",
-            reason: "The deliberate non-lydian color resets the listener's ear.",
+            reason:
+              "The deliberate non-lydian color resets the listener's ear.",
             tension: "borrowed",
           },
           {
             id: "bridge-2",
             chordName: "G6",
-            reason: "Prepares the chorus return without sounding final too early.",
+            reason:
+              "Prepares the chorus return without sounding final too early.",
             tension: "release",
           },
           {

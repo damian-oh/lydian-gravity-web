@@ -15,12 +15,12 @@ This document records the color system for the frontend and distinguishes betwee
 
 The app currently defines four root CSS variables and exposes them to Tailwind through `@theme inline`.
 
-| Token | Light | Dark | Purpose |
-| :--- | :--- | :--- | :--- |
-| `--background` | `#F1F5F9` | `#020617` | App background and large surface areas |
-| `--foreground` | `#0F172A` | `#E2E8F0` | Default text color and high-emphasis UI content |
-| `--accent` | `#F59E0B` | `#FBBF24` | Active states, emphasis, and calls to action |
-| `--highlight` | `#E2E8F0` | `#334155` | Borders, dividers, muted surfaces, and secondary panels |
+| Token          | Light     | Dark      | Purpose                                                 |
+| :------------- | :-------- | :-------- | :------------------------------------------------------ |
+| `--background` | `#F1F5F9` | `#020617` | App background and large surface areas                  |
+| `--foreground` | `#0F172A` | `#E2E8F0` | Default text color and high-emphasis UI content         |
+| `--accent`     | `#F59E0B` | `#FBBF24` | Active states, emphasis, and calls to action            |
+| `--highlight`  | `#E2E8F0` | `#334155` | Borders, dividers, muted surfaces, and secondary panels |
 
 These are mapped in `src/app/globals.css` as:
 
@@ -39,10 +39,10 @@ These are mapped in `src/app/globals.css` as:
 
 Dark mode is controlled by `@media (prefers-color-scheme: dark)` in `src/app/globals.css`.
 
-| Mode | Background | Foreground | Accent | Highlight |
-| :--- | :--- | :--- | :--- | :--- |
-| Light | `#F1F5F9` | `#0F172A` | `#F59E0B` | `#E2E8F0` |
-| Dark | `#020617` | `#E2E8F0` | `#FBBF24` | `#334155` |
+| Mode  | Background | Foreground | Accent    | Highlight |
+| :---- | :--------- | :--------- | :-------- | :-------- |
+| Light | `#F1F5F9`  | `#0F172A`  | `#F59E0B` | `#E2E8F0` |
+| Dark  | `#020617`  | `#E2E8F0`  | `#FBBF24` | `#334155` |
 
 ### Typography Notes
 
@@ -55,12 +55,12 @@ Dark mode is controlled by `@media (prefers-color-scheme: dark)` in `src/app/glo
 
 This is the intended palette to standardize the UI around as the app moves away from hard-coded Tailwind colors.
 
-| Role | Hex | Intended Use |
-| :--- | :--- | :--- |
-| `background` | `#F1F5F9` | Primary page background and large surfaces |
-| `foreground` | `#0F172A` | Primary text and high-emphasis UI content |
-| `accent` | `#F59E0B` | Active states, emphasis, calls to action, and tonal highlights |
-| `highlight` | `#E2E8F0` | Borders, dividers, muted surfaces, and secondary panels |
+| Role         | Hex       | Intended Use                                                   |
+| :----------- | :-------- | :------------------------------------------------------------- |
+| `background` | `#F1F5F9` | Primary page background and large surfaces                     |
+| `foreground` | `#0F172A` | Primary text and high-emphasis UI content                      |
+| `accent`     | `#F59E0B` | Active states, emphasis, calls to action, and tonal highlights |
+| `highlight`  | `#E2E8F0` | Borders, dividers, muted surfaces, and secondary panels        |
 
 ### Palette Intent
 

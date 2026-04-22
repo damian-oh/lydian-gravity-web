@@ -24,7 +24,9 @@ function formatDate(value: string) {
 export function LibraryDashboard() {
   const { token } = useAuth();
   const [songs, setSongs] = useState<readonly SongSummaryModel[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -154,7 +156,8 @@ export function LibraryDashboard() {
                       {song.title}
                     </p>
                     <p className="mt-2 text-sm text-muted">
-                      {song.masterTonalCenter} {formatModeLabel(song.masterMode)}
+                      {song.masterTonalCenter}{" "}
+                      {formatModeLabel(song.masterMode)}
                     </p>
                   </div>
                   <span className="rounded-full border border-highlight/80 bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-foreground/65">
