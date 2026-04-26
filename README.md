@@ -1,27 +1,76 @@
 # Lydian Gravity Web
 
-Next.js frontend for Lydian Gravity, a modal songwriting workspace for sketching
-sections, chord motion, melodic ideas, and theory cues. The app talks to the
-separate FastAPI backend for authentication, song library storage, arrangement
-updates, and next-step harmonic suggestions.
+Next.js frontend for **Lydian Gravity**, a full-stack songwriting workspace for
+sketching modal harmony, arranging song sections, shaping melody ideas, and
+requesting theory-aware next-step suggestions.
 
-## Stack
+This repository is the portfolio-facing client. It connects to the companion
+FastAPI backend:
+[lydian-gravity-fastapi](https://github.com/damian-oh/lydian-gravity-fastapi).
 
-- **Framework:** Next.js 16
-- **UI:** React 19, Tailwind CSS 4
-- **API:** FastAPI backend in a separate repository
-- **Package manager:** npm with `package-lock.json`
+## Project Highlights
 
-## Requirements
+- **Complete authenticated flow:** Register, log in, persist a session token,
+  and enter a protected songwriting workspace.
+- **Song library dashboard:** Load saved sketches from the API, review tonal
+  centers, modes, tempos, time signatures, section counts, and update times.
+- **Guided song setup:** Start new sketches with title, tonal center, mode,
+  tempo, meter, and notes before entering the editor.
+- **Section-based arrangement editor:** Add, remove, resize, and switch between
+  A/B/C/D sections while preserving stable ordering.
+- **Modal chord workflow:** Choose diatonic chords, secondary dominants, and
+  modal-interchange colors from a generated chord catalog.
+- **Melody lane editing:** Add, drag, resize, clamp, and normalize monophonic
+  MIDI-note melody events against the active section timeline.
+- **Theory panel integration:** Request backend-generated chord suggestions,
+  pitch collections, melody prompts, rhythm prompts, and modal-interchange
+  insights for the current context.
+- **Browser audio preview:** Audition section chords and melody notes with Web
+  Audio transport controls, loop/metronome toggles, waveforms, and output level.
 
-- Node.js `>=20.9.0`
-- npm
-- A reachable Lydian Gravity API deployment
+## Tech Stack
 
-The frontend expects the API to expose the `/api/v1` routes used by auth, users,
-songs, arrangements, and suggestions.
+| Layer | Choice |
+| --- | --- |
+| Framework | Next.js 16 |
+| UI | React 19, Tailwind CSS 4 |
+| Language | TypeScript |
+| API | FastAPI backend over `NEXT_PUBLIC_API_BASE_URL` |
+| Tooling | npm, ESLint |
 
-## Environment
+## Application Flow
+
+```text
+Public landing page
+        |
+        |-- Register / Login
+        |
+        `-- Authenticated app shell
+                |-- Library dashboard
+                |-- New sketch setup
+                `-- Song editor
+                        |-- Section timeline
+                        |-- Chord picker
+                        |-- Melody lane
+                        |-- Theory panel
+                        `-- Audio preview transport
+```
+
+Core routes:
+
+| Route | Purpose |
+| --- | --- |
+| `/` | Public landing page |
+| `/register` | Account creation |
+| `/login` | Sign in |
+| `/library` | Authenticated saved-sketch dashboard |
+| `/songs/new` | Create a new song sketch |
+| `/songs/[songId]` | Edit a saved song sketch |
+
+## Backend Integration
+
+The app expects the FastAPI service to expose the same `/api/v1` contract used
+by the backend repository.
 
 Create `.env.local` for local development:
 
@@ -35,25 +84,40 @@ For production, set the same variable to the deployed API base URL:
 NEXT_PUBLIC_API_BASE_URL=https://your-api-domain.example/api/v1
 ```
 
-`NEXT_PUBLIC_API_BASE_URL` is read by the browser bundle. Set it before building
-or deploying the app. If it is omitted, the app falls back to
-`http://127.0.0.1:8000/api/v1`, which is only useful for local development.
+`NEXT_PUBLIC_API_BASE_URL` is bundled into client-side code at build time. If it
+is omitted, the app falls back to `http://127.0.0.1:8000/api/v1`, which is only
+useful for local development.
 
 ## Local Development
 
-Install dependencies:
+### Requirements
+
+- Node.js `>=20.9.0`
+- npm
+- A running or deployed Lydian Gravity FastAPI backend
+
+### Install
 
 ```bash
 npm install
 ```
 
-Start the development server:
+### Run
 
 ```bash
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+For a full local stack, start the backend from the companion repo first:
+
+```bash
+uv run fastapi dev app/main.py
+```
+
+Then set `NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000/api/v1` in
+`.env.local`.
 
 ## Quality Checks
 
@@ -75,62 +139,33 @@ Run the production server locally after building:
 npm run start
 ```
 
-## Deploy to Vercel
+## Deployment Notes
 
-1. Import this repository into Vercel.
-2. Use the **Next.js** framework preset.
-3. Leave the install command as the npm default, or set it to `npm install`.
-4. Set the build command to `npm run build`.
-5. Add `NEXT_PUBLIC_API_BASE_URL` in Vercel project environment variables.
-6. Deploy the project.
+This app is designed for a standard Next.js deployment, such as Vercel.
 
-Use the production API URL for the Production environment. Use a staging API URL
-for Preview deployments if previews should run against separate backend data.
+Deployment checklist:
 
-After changing `NEXT_PUBLIC_API_BASE_URL`, redeploy the frontend so the public
-environment variable is rebuilt into the client bundle.
+- Use the Next.js framework preset.
+- Install dependencies with `npm install`.
+- Build with `npm run build`.
+- Set `NEXT_PUBLIC_API_BASE_URL` to the deployed FastAPI `/api/v1` URL before
+  building.
+- Configure the backend CORS allowlist with the deployed frontend origin.
+- Redeploy the frontend after changing `NEXT_PUBLIC_API_BASE_URL`.
 
-## Deployment Verification
+After deployment, verify the main user flows:
 
-After Vercel deploys, verify these flows against the deployed URL:
+- Register a new account.
+- Log in.
+- Open the library.
+- Create a new sketch.
+- Edit and save an arrangement.
+- Request theory suggestions from the editor.
+- Play back a section through the browser audio preview.
 
-- Visit `/register` and create an account.
-- Visit `/login` and sign in.
-- Open `/library` and confirm saved sketches load from the API.
-- Create a sketch from `/songs/new`.
-- Open a saved song, edit the arrangement, and save it.
-- Request next-step suggestions from the theory panel.
+## Companion Project
 
-## Backend Deployment Notes
-
-The FastAPI backend must be deployed before the frontend can be fully verified.
-Confirm the backend:
-
-- Serves the API under the same `/api/v1` base path used by
-  `NEXT_PUBLIC_API_BASE_URL`.
-- Allows requests from the Vercel production domain and any preview domains that
-  need to use the API.
-- Uses HTTPS in production.
-- Has production database and authentication settings configured separately from
-  local development.
-
-## Troubleshooting
-
-- **Unable to reach the API:** Confirm `NEXT_PUBLIC_API_BASE_URL` points to the
-  deployed API, includes `/api/v1`, and was set before the latest Vercel deploy.
-- **Browser CORS errors:** Add the Vercel deployment domain to the FastAPI CORS
-  allowlist.
-- **Auth succeeds locally but not in production:** Confirm the production API is
-  using the expected auth configuration and that the frontend was rebuilt with
-  the production API URL.
-- **Library or song pages do not load:** Check that the API is reachable from the
-  browser and that the authenticated user has a valid session token.
-
-## Useful Routes
-
-- `/` - public landing page
-- `/register` - account creation
-- `/login` - sign in
-- `/library` - authenticated song library
-- `/songs/new` - create a song sketch
-- `/songs/[songId]` - edit an existing song sketch
+The backend lives in
+[lydian-gravity-fastapi](https://github.com/damian-oh/lydian-gravity-fastapi).
+It provides authentication, user-scoped persistence, arrangement storage, and
+deterministic music-theory suggestion APIs for this client.
