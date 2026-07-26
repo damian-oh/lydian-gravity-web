@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { startTransition, useState } from "react";
 
+import { getSafeNextPath } from "@/features/auth/lib/next-path";
 import { useAuth } from "@/features/auth/providers/auth-provider";
 
 import { AuthMessage } from "./auth-message";
@@ -10,13 +11,15 @@ import { AuthMessage } from "./auth-message";
 /**
  * Manual way into the demo.
  *
- * The provider auto-provisions a session on mount, but it does not remount
- * after a logout -- without this button a visitor who exits the demo would be
- * stranded on the login page with no account to sign in with.
+ * The app shell provisions a session when a visitor asks for a page that needs
+ * one, but nothing does so on the login page -- without this button a visitor
+ * who exits the demo would be stranded there with no account to sign in with.
  */
-export function DemoSessionButton() {
+export function DemoSessionButton({
+  nextPath,
+}: Readonly<{ nextPath?: string }>) {
   const router = useRouter();
-  const { startDemoSession } = useAuth();
+  const { startDemoSession, status } = useAuth();
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,13 +31,20 @@ export function DemoSessionButton() {
 
     if (result.ok) {
       startTransition(() => {
-        router.push("/library");
+        router.push(getSafeNextPath(nextPath));
       });
       return;
     }
 
     setError(result.message);
     setIsStarting(false);
+  }
+
+  // Nothing to offer someone who already has a session, or whose session is
+  // still being resolved. isStarting keeps the button mounted through its own
+  // request, which moves the status to "loading".
+  if (status !== "anonymous" && !isStarting) {
+    return null;
   }
 
   return (

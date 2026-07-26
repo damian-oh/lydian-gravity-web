@@ -1,9 +1,10 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { isDemoMode } from "@/features/auth/lib/demo-config";
 import { useAuth } from "@/features/auth/providers/auth-provider";
 
 export function AuthenticatedAppShell({
@@ -11,16 +12,40 @@ export function AuthenticatedAppShell({
 }: Readonly<{ children: ReactNode }>) {
   const pathname = usePathname();
   const router = useRouter();
-  const { status } = useAuth();
+  const { startDemoSession, status } = useAuth();
+  const hasRequestedDemo = useRef(false);
+  const hasHadSession = useRef(false);
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      hasHadSession.current = true;
+    }
+  }, [status]);
 
   useEffect(() => {
     if (status !== "anonymous") {
       return;
     }
 
+    // Demo mode provisions a session where one is actually required, rather
+    // than on every page under the root layout. startDemoSession moves the
+    // status to "loading", so the redirect below only runs once the request
+    // has come back and failed.
+    //
+    // Only for a visitor who arrived without a session, though: reaching
+    // "anonymous" after having had one means they just signed out, and
+    // handing them a fresh demo account would make that button do nothing.
+    const isNewVisitor = !hasHadSession.current && !hasRequestedDemo.current;
+
+    if (isDemoMode && isNewVisitor) {
+      hasRequestedDemo.current = true;
+      void startDemoSession();
+      return;
+    }
+
     const next = encodeURIComponent(pathname);
     router.replace(`/login?next=${next}`);
-  }, [pathname, router, status]);
+  }, [pathname, router, startDemoSession, status]);
 
   if (status !== "authenticated") {
     return (

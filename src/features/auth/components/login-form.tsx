@@ -8,6 +8,7 @@ import {
   type FormEvent,
 } from "react";
 
+import { getSafeNextPath } from "@/features/auth/lib/next-path";
 import { useAuth } from "@/features/auth/providers/auth-provider";
 
 import { AuthInputField } from "./auth-input-field";
@@ -57,14 +58,6 @@ function clearErrors(current: LoginErrors, fields: LoginErrorField[]) {
   }
 
   return next;
-}
-
-function getSafeNextPath(nextPath: string | undefined) {
-  if (!nextPath || !nextPath.startsWith("/") || nextPath.startsWith("//")) {
-    return "/library";
-  }
-
-  return nextPath;
 }
 
 export function LoginForm({ nextPath }: Readonly<{ nextPath?: string }>) {

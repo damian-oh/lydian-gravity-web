@@ -23,7 +23,6 @@ import {
   getStoredAuthToken,
   storeAuthToken,
 } from "@/features/auth/lib/auth-token";
-import { isDemoMode } from "@/features/auth/lib/demo-config";
 
 type AuthStatus = "loading" | "authenticated" | "anonymous";
 
@@ -45,10 +44,8 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [initialToken] = useState(() => getStoredAuthToken());
-  // In demo mode the first paint must not be "anonymous", or the app shell
-  // redirects to /login before the demo session finishes provisioning.
   const [status, setStatus] = useState<AuthStatus>(
-    initialToken || isDemoMode ? "loading" : "anonymous",
+    initialToken ? "loading" : "anonymous",
   );
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(initialToken);
@@ -69,6 +66,8 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   }, []);
 
   const startDemoSession = useCallback(async () => {
+    const previousStatus = status;
+
     setStatus("loading");
 
     try {
@@ -79,37 +78,30 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
       return { ok: true } as const;
     } catch (error) {
-      logout();
+      // Restore what this interrupted. The request never touched the stored
+      // token, so a failure must not clear one that was already there.
+      setStatus(previousStatus === "loading" ? "anonymous" : previousStatus);
 
       return {
         ok: false,
         message: formatAuthError(error),
       } as const;
     }
-  }, [loadCurrentUser, logout]);
+  }, [loadCurrentUser, status]);
 
   useEffect(() => {
-    if (!initialToken && !isDemoMode) {
+    if (!initialToken) {
       return;
     }
 
     const timeoutId = window.setTimeout(() => {
-      if (initialToken) {
-        void loadCurrentUser(initialToken).catch(logout);
-        return;
-      }
-
-      // No stored token and demo mode is on: provision one. If the API has
-      // demo mode disabled this falls through to logout(), which lands the
-      // visitor on the normal login redirect rather than hanging on the
-      // loading state.
-      void startDemoSession();
+      void loadCurrentUser(initialToken).catch(logout);
     }, 0);
 
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [initialToken, loadCurrentUser, logout, startDemoSession]);
+  }, [initialToken, loadCurrentUser, logout]);
 
   const login = useCallback(
     async (credentials: AuthCredentials) => {

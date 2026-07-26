@@ -4,6 +4,7 @@ export type AuthUser = Readonly<{
   id: number;
   email: string;
   created_at: string;
+  is_demo: boolean;
 }>;
 
 export type AuthToken = Readonly<{

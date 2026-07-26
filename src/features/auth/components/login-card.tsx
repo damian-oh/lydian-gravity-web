@@ -34,7 +34,7 @@ export function LoginCard({
       }
     >
       <LoginForm nextPath={nextPath} />
-      {isDemoMode ? <DemoSessionButton /> : null}
+      {isDemoMode ? <DemoSessionButton nextPath={nextPath} /> : null}
     </AuthCard>
   );
 }

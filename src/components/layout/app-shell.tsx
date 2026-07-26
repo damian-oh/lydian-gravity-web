@@ -13,7 +13,6 @@ import {
   AppShellNavigationContext,
   type AppShellNavigationGuard,
 } from "@/components/layout/app-shell-navigation";
-import { isDemoMode } from "@/features/auth/lib/demo-config";
 import { useAuth } from "@/features/auth/providers/auth-provider";
 import { cn } from "@/lib/cn";
 
@@ -148,9 +147,12 @@ export function AppShell({ children }: AppShellProps) {
   const [navigationGuard, setNavigationGuard] =
     useState<AppShellNavigationGuard | null>(null);
 
+  // Keyed off the account, not the deployment: a demo build still lets people
+  // sign in normally, and a registered account should see its own address.
   // Demo accounts have a generated address that reads as noise in the header.
-  const accountLabel = isDemoMode ? "Demo visitor" : (user?.email ?? null);
-  const logoutLabel = isDemoMode ? "Exit demo" : "Logout";
+  const isDemoUser = user?.is_demo ?? false;
+  const accountLabel = isDemoUser ? "Demo visitor" : (user?.email ?? null);
+  const logoutLabel = isDemoUser ? "Exit demo" : "Logout";
 
   function confirmNavigation(href: string) {
     if (!navigationGuard) {
@@ -236,7 +238,7 @@ export function AppShell({ children }: AppShellProps) {
                     />
                   ))}
                   <div className="flex items-center gap-2 rounded-full border border-highlight/80 bg-background/45 px-3 py-2">
-                    {isDemoMode ? (
+                    {isDemoUser ? (
                       <span className="rounded-full bg-accent/20 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-foreground/72">
                         Demo
                       </span>
