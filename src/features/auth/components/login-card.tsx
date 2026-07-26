@@ -1,6 +1,9 @@
+import { isDemoMode } from "@/features/auth/lib/demo-config";
+
 import { AuthCard } from "./auth-card";
 import { AuthMessage } from "./auth-message";
 import { AuthTextLink } from "./auth-text-link";
+import { DemoSessionButton } from "./demo-session-button";
 import { LoginForm } from "./login-form";
 
 type LoginCardProps = Readonly<{
@@ -31,6 +34,7 @@ export function LoginCard({
       }
     >
       <LoginForm nextPath={nextPath} />
+      {isDemoMode ? <DemoSessionButton /> : null}
     </AuthCard>
   );
 }

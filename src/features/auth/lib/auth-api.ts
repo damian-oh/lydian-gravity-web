@@ -53,6 +53,12 @@ export async function requestAccessToken(credentials: AuthCredentials) {
   });
 }
 
+export async function requestDemoSession() {
+  return apiFetch<AuthToken>("/auth/demo-session", {
+    method: "POST",
+  });
+}
+
 export async function getCurrentUser(token: string) {
   return apiFetch<AuthUser>("/users/me", {
     method: "GET",
