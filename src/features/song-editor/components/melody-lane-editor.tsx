@@ -171,6 +171,14 @@ export function MelodyLaneEditor({
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const gridBodyRef = useRef<HTMLDivElement | null>(null);
+  // pointerup can fire before the re-render from the last pointermove commits,
+  // so the committed gesture lives in a ref and state only drives the preview.
+  const gestureRef = useRef<MelodyGesture | null>(null);
+
+  function beginGesture(nextGesture: MelodyGesture) {
+    gestureRef.current = nextGesture;
+    setGesture(nextGesture);
+  }
 
   const beatWidth = beatWidthLevels[zoomIndex];
   const subdivisionWidth = beatWidth / snapDivisionsPerBeat;
@@ -239,12 +247,12 @@ export function MelodyLaneEditor({
     };
   }, [onRemoveNote, selectedNote]);
 
+  const gestureActive = gesture !== null;
+
   useEffect(() => {
-    if (!gesture) {
+    if (!gestureActive) {
       return;
     }
-
-    const activeGesture = gesture;
 
     function getGridLocation(clientX: number, clientY: number) {
       const gridBody = gridBodyRef.current;
@@ -271,69 +279,80 @@ export function MelodyLaneEditor({
       };
     }
 
+    function advanceGesture(
+      currentGesture: MelodyGesture,
+      location: Readonly<{ cell: number; pitch: number }>,
+    ): MelodyGesture {
+      switch (currentGesture.kind) {
+        case "draw":
+          return {
+            ...currentGesture,
+            currentCell: location.cell,
+          };
+        case "move": {
+          const nextStartCell = clamp(
+            location.cell - currentGesture.anchorCellOffset,
+            0,
+            totalCells - currentGesture.durationCells,
+          );
+          const nextPitch = clamp(
+            currentGesture.pitch +
+              (location.pitch - currentGesture.anchorPitch),
+            minPitch,
+            maxPitch,
+          );
+
+          return {
+            ...currentGesture,
+            currentStartCell: nextStartCell,
+            currentPitch: nextPitch,
+          };
+        }
+        case "resizeStart":
+          return {
+            ...currentGesture,
+            currentStartCell: clamp(
+              location.cell,
+              0,
+              currentGesture.endCell - 1,
+            ),
+          };
+        case "resizeEnd":
+          return {
+            ...currentGesture,
+            currentDurationCells:
+              clamp(
+                location.cell + 1,
+                currentGesture.startCell + 1,
+                totalCells,
+              ) - currentGesture.startCell,
+          };
+        default:
+          return currentGesture;
+      }
+    }
+
     function handlePointerMove(event: PointerEvent) {
       const location = getGridLocation(event.clientX, event.clientY);
+      const currentGesture = gestureRef.current;
 
-      if (!location) {
+      if (!location || !currentGesture) {
         return;
       }
 
-      setGesture((currentGesture) => {
-        if (!currentGesture) {
-          return currentGesture;
-        }
+      const nextGesture = advanceGesture(currentGesture, location);
 
-        switch (currentGesture.kind) {
-          case "draw":
-            return {
-              ...currentGesture,
-              currentCell: location.cell,
-            };
-          case "move": {
-            const nextStartCell = clamp(
-              location.cell - currentGesture.anchorCellOffset,
-              0,
-              totalCells - currentGesture.durationCells,
-            );
-            const nextPitch = clamp(
-              currentGesture.pitch +
-                (location.pitch - currentGesture.anchorPitch),
-              minPitch,
-              maxPitch,
-            );
-
-            return {
-              ...currentGesture,
-              currentStartCell: nextStartCell,
-              currentPitch: nextPitch,
-            };
-          }
-          case "resizeStart":
-            return {
-              ...currentGesture,
-              currentStartCell: clamp(
-                location.cell,
-                0,
-                currentGesture.endCell - 1,
-              ),
-            };
-          case "resizeEnd":
-            return {
-              ...currentGesture,
-              currentDurationCells:
-                clamp(
-                  location.cell + 1,
-                  currentGesture.startCell + 1,
-                  totalCells,
-                ) - currentGesture.startCell,
-            };
-          default:
-            return currentGesture;
-        }
-      });
+      gestureRef.current = nextGesture;
+      setGesture(nextGesture);
     }
 
     function handlePointerUp() {
+      const activeGesture = gestureRef.current;
+
+      if (!activeGesture) {
+        return;
+      }
+
       switch (activeGesture.kind) {
         case "draw": {
           const startCell = Math.min(
@@ -375,6 +394,7 @@ export function MelodyLaneEditor({
           break;
       }
 
+      gestureRef.current = null;
       setGesture(null);
     }
 
@@ -386,7 +406,7 @@ export function MelodyLaneEditor({
       window.removeEventListener("pointerup", handlePointerUp);
     };
   }, [
-    gesture,
+    gestureActive,
     gridHeight,
     gridWidth,
     onAddNote,
@@ -616,7 +636,7 @@ export function MelodyLaneEditor({
                   if (interactionMode === "draw") {
                     event.preventDefault();
                     onSelectNote(null);
-                    setGesture({
+                    beginGesture({
                       kind: "draw",
                       pitch: location.pitch,
                       startCell: location.cell,
@@ -765,7 +785,7 @@ export function MelodyLaneEditor({
                               return;
                             }
 
-                            setGesture({
+                            beginGesture({
                               kind: "move",
                               noteId: note.id,
                               pitch: frame.pitch,
@@ -797,7 +817,7 @@ export function MelodyLaneEditor({
                                 event.preventDefault();
                                 event.stopPropagation();
                                 onSelectNote(note.id);
-                                setGesture({
+                                beginGesture({
                                   kind: "resizeStart",
                                   noteId: note.id,
                                   pitch: frame.pitch,
@@ -813,7 +833,7 @@ export function MelodyLaneEditor({
                                 event.preventDefault();
                                 event.stopPropagation();
                                 onSelectNote(note.id);
-                                setGesture({
+                                beginGesture({
                                   kind: "resizeEnd",
                                   noteId: note.id,
                                   pitch: frame.pitch,
