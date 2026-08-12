@@ -59,7 +59,11 @@ async function parseResponseBody(response: Response) {
     return null;
   }
 
-  return response.json();
+  // FastAPI labels bodyless responses (204 from DELETE) as application/json;
+  // response.json() would throw on the empty body.
+  const text = await response.text();
+
+  return text ? (JSON.parse(text) as unknown) : null;
 }
 
 export async function apiFetch<T>(
