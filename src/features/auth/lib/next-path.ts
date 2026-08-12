@@ -6,7 +6,14 @@
  * than becoming an open redirect.
  */
 export function getSafeNextPath(nextPath: string | undefined) {
-  if (!nextPath || !nextPath.startsWith("/") || nextPath.startsWith("//")) {
+  if (
+    !nextPath ||
+    !nextPath.startsWith("/") ||
+    nextPath.startsWith("//") ||
+    // Browsers normalize backslashes to slashes in URLs, so "/\evil.com"
+    // resolves like "//evil.com" -- an off-site redirect.
+    nextPath.includes("\\")
+  ) {
     return "/library";
   }
 
