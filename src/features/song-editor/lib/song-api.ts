@@ -274,12 +274,14 @@ export async function requestNextSteps(
   section: SongSectionModel,
   selectedChordId: number | null,
   selectedNoteId: number | null,
+  signal?: AbortSignal,
 ) {
   const response = await apiFetch<ApiNextStepResponse>(
     "/suggestions/next-steps",
     {
       method: "POST",
       token,
+      signal,
       headers: {
         "Content-Type": "application/json",
       },

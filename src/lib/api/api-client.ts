@@ -99,6 +99,12 @@ export async function apiFetch<T>(
       throw error;
     }
 
+    if (error instanceof DOMException && error.name === "AbortError") {
+      // A caller-initiated abort is not an API failure; let it propagate so
+      // callers can recognize and ignore it.
+      throw error;
+    }
+
     throw new ApiError(0, getErrorMessage(0, null), null);
   }
 }

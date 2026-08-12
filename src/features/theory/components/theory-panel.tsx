@@ -68,6 +68,9 @@ export function TheoryPanel({
     }
 
     let cancelled = false;
+    const controller = new AbortController();
+    // Debounced: the section object gets a fresh identity on every edit, and
+    // firing a POST per keystroke floods the API for intermediate states.
     const timeoutId = window.setTimeout(() => {
       setIsLoadingSuggestions(true);
       setSuggestionError(null);
@@ -78,6 +81,7 @@ export function TheoryPanel({
         section,
         selectedChord?.id ?? null,
         selectedNoteId,
+        controller.signal,
       )
         .then((nextTheory) => {
           if (cancelled) {
@@ -103,10 +107,11 @@ export function TheoryPanel({
             setIsLoadingSuggestions(false);
           }
         });
-    }, 0);
+    }, 400);
 
     return () => {
       cancelled = true;
+      controller.abort();
       window.clearTimeout(timeoutId);
     };
   }, [section, selectedChord?.id, selectedNoteId, song, token]);
