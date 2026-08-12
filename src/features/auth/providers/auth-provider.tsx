@@ -43,12 +43,12 @@ type AuthContextValue = Readonly<{
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const [initialToken] = useState(() => getStoredAuthToken());
-  const [status, setStatus] = useState<AuthStatus>(
-    initialToken ? "loading" : "anonymous",
-  );
+  // The server render cannot see sessionStorage, so both server and client
+  // must start from the same "loading" state; the mount effect below resolves
+  // it. Reading storage in an initializer caused hydration mismatches.
+  const [status, setStatus] = useState<AuthStatus>("loading");
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [token, setToken] = useState<string | null>(initialToken);
+  const [token, setToken] = useState<string | null>(null);
 
   const logout = useCallback(() => {
     clearStoredAuthToken();
@@ -90,18 +90,22 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   }, [loadCurrentUser, status]);
 
   useEffect(() => {
-    if (!initialToken) {
-      return;
-    }
-
     const timeoutId = window.setTimeout(() => {
-      void loadCurrentUser(initialToken).catch(logout);
+      const storedToken = getStoredAuthToken();
+
+      if (!storedToken) {
+        setStatus("anonymous");
+
+        return;
+      }
+
+      void loadCurrentUser(storedToken).catch(logout);
     }, 0);
 
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [initialToken, loadCurrentUser, logout]);
+  }, [loadCurrentUser, logout]);
 
   const login = useCallback(
     async (credentials: AuthCredentials) => {
