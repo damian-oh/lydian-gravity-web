@@ -702,8 +702,22 @@ export function SongEditorWorkspace({
         : null,
     );
 
+    // The in-app guard can't intercept refresh/close; browsers only honor a
+    // beforeunload prompt, and only with their own generic wording.
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      // Legacy prompt trigger; Safari and older Chromium ignore
+      // preventDefault alone.
+      event.returnValue = "";
+    }
+
+    if (dirty) {
+      window.addEventListener("beforeunload", handleBeforeUnload);
+    }
+
     return () => {
       setNavigationGuard(null);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [dirty, setNavigationGuard]);
 
