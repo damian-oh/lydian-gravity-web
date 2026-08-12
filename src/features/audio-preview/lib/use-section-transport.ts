@@ -338,8 +338,11 @@ export function useSectionTransport({
         return;
       }
 
-      const firstBeat = Math.floor(fromBeat) + 1;
-      const lastBeat = Math.floor(toBeat);
+      // Half-open [fromBeat, toBeat), matching isCrossed: beat 0 clicks when
+      // playback starts from the top, and the section-end boundary is left to
+      // the next window (the loop wrap re-enters at beat 0).
+      const firstBeat = Math.ceil(fromBeat);
+      const lastBeat = Math.ceil(toBeat) - 1;
 
       for (let beat = firstBeat; beat <= lastBeat; beat += 1) {
         const eventKey = `metronome:${sectionId}:${beat}`;
