@@ -204,6 +204,13 @@ export function useSectionTransport({
 
   const seek = useCallback(
     (beat: number) => {
+      if (!isCurrentScopeBound) {
+        // The UI shows an unbound scope as stopped; rebinding through a
+        // playhead drag must not resurrect the previous section's "playing"
+        // status and start audio the user never asked for.
+        setStatus("stopped");
+      }
+
       setBoundScopeKey(scopeKey);
       const nextBeat = clampBeat(beat, safeTotalBeats);
 
@@ -211,7 +218,7 @@ export function useSectionTransport({
       triggeredEventKeysRef.current.clear();
       setCurrentBeat(nextBeat);
     },
-    [safeTotalBeats, scopeKey],
+    [isCurrentScopeBound, safeTotalBeats, scopeKey],
   );
 
   const toggleLoop = useCallback(() => {
