@@ -33,6 +33,7 @@ export function LibraryDashboard() {
     "loading",
   );
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState("");
   const [renamePending, setRenamePending] = useState(false);
@@ -165,6 +166,11 @@ export function LibraryDashboard() {
     }
   }
 
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleSongs = normalizedQuery
+    ? songs.filter((song) => song.title.toLowerCase().includes(normalizedQuery))
+    : songs;
+
   return (
     <div className="space-y-6">
       <ConfirmDialog
@@ -218,6 +224,18 @@ export function LibraryDashboard() {
             : "No sketches saved yet"
         }
         description="Saved sketches are loaded from the FastAPI SQLite-backed library."
+        actions={
+          status === "ready" && songs.length > 0 ? (
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search sketches..."
+              aria-label="Search sketches by title"
+              className="w-48 rounded-full border border-highlight/80 bg-background/55 px-4 py-2 text-sm font-semibold text-foreground placeholder:text-foreground/40 focus:border-accent/40 focus:outline-none focus:ring-4 focus:ring-accent/15"
+            />
+          ) : undefined
+        }
         bodyClassName="space-y-6"
       >
         {actionError ? (
@@ -265,9 +283,13 @@ export function LibraryDashboard() {
               </Link>
             </div>
           </div>
+        ) : visibleSongs.length === 0 ? (
+          <div className="rounded-[1.3rem] border border-highlight/70 bg-background/55 p-5 text-sm font-semibold text-muted">
+            No sketches match &ldquo;{query.trim()}&rdquo;.
+          </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {songs.map((song) => {
+            {visibleSongs.map((song) => {
               const renaming = renamingId === song.id;
 
               return (
