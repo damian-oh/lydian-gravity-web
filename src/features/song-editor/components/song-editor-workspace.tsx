@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { PanelShell } from "@/components/ui/panel-shell";
 import { AudioPreviewPanel } from "@/features/audio-preview/components/audio-preview-panel";
@@ -757,6 +757,70 @@ export function SongEditorWorkspace({
     });
 
   useEffect(() => {
+    if (!saveMessage) {
+      return;
+    }
+
+    // Success confirmation clears itself; errors (saveError) stay until the
+    // next save attempt so failures can't be missed.
+    const timeoutId = window.setTimeout(() => {
+      setSaveMessage(null);
+    }, 4000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [saveMessage]);
+
+  const handleSaveArrangement = useCallback(async () => {
+    setIsSaving(true);
+    setSaveError(null);
+    setSaveMessage(null);
+
+    try {
+      const savedSong = await onSaveArrangement(sections);
+      setSections(savedSong.sections);
+      setActiveSectionId((currentActiveSectionId) =>
+        savedSong.sections.some(
+          (section) => section.id === currentActiveSectionId,
+        )
+          ? currentActiveSectionId
+          : (savedSong.sections[0]?.id ?? 0),
+      );
+      setDirty(false);
+      setSaveMessage("Arrangement saved.");
+    } catch (error) {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "Unable to save the arrangement.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }, [onSaveArrangement, sections]);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
+        // Always swallow the browser save dialog inside the editor, even
+        // when there is nothing to save.
+        event.preventDefault();
+
+        if (dirty && !isSaving) {
+          void handleSaveArrangement();
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [dirty, isSaving, handleSaveArrangement]);
+
+  useEffect(() => {
     if (!activeSection || selectedMelodyNoteId === null) {
       return;
     }
@@ -818,34 +882,6 @@ export function SongEditorWorkspace({
     setDirty(true);
     setSaveMessage(null);
     setSaveError(null);
-  }
-
-  async function handleSaveArrangement() {
-    setIsSaving(true);
-    setSaveError(null);
-    setSaveMessage(null);
-
-    try {
-      const savedSong = await onSaveArrangement(sections);
-      setSections(savedSong.sections);
-      setActiveSectionId((currentActiveSectionId) =>
-        savedSong.sections.some(
-          (section) => section.id === currentActiveSectionId,
-        )
-          ? currentActiveSectionId
-          : (savedSong.sections[0]?.id ?? 0),
-      );
-      setDirty(false);
-      setSaveMessage("Arrangement saved.");
-    } catch (error) {
-      setSaveError(
-        error instanceof Error
-          ? error.message
-          : "Unable to save the arrangement.",
-      );
-    } finally {
-      setIsSaving(false);
-    }
   }
 
   function handleActivateSection(nextSection: SongSectionModel) {
@@ -1189,7 +1225,6 @@ export function SongEditorWorkspace({
               `${song.tempoBpm} BPM`,
               song.timeSignature,
               `${sections.length} sections`,
-              dirty ? "Unsaved" : "Saved",
             ].map((item) => (
               <span
                 key={item}
@@ -1198,6 +1233,22 @@ export function SongEditorWorkspace({
                 {item}
               </span>
             ))}
+            <span
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold",
+                dirty
+                  ? "border-accent/40 bg-accent-soft text-foreground"
+                  : "border-highlight/80 bg-surface text-foreground/72",
+              )}
+            >
+              {dirty ? (
+                <span
+                  aria-hidden="true"
+                  className="h-2 w-2 animate-pulse rounded-full bg-accent"
+                />
+              ) : null}
+              {dirty ? "Unsaved" : "Saved"}
+            </span>
           </div>
           <button
             type="button"
