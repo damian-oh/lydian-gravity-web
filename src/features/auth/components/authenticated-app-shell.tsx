@@ -15,6 +15,7 @@ export function AuthenticatedAppShell({
   const router = useRouter();
   const { startDemoSession, status } = useAuth();
   const hasRequestedDemo = useRef(false);
+  const demoRequestFailed = useRef(false);
   const hasHadSession = useRef(false);
 
   useEffect(() => {
@@ -29,19 +30,32 @@ export function AuthenticatedAppShell({
     }
 
     // Demo mode provisions a session where one is actually required, rather
-    // than on every page under the root layout. startDemoSession moves the
-    // status to "loading", so the redirect below only runs once the request
-    // has come back and failed.
+    // than on every page under the root layout.
     //
     // Only for a visitor who arrived without a session, though: reaching
     // "anonymous" after having had one means they just signed out, and
     // handing them a fresh demo account would make that button do nothing.
-    const isNewVisitor = !hasHadSession.current && !hasRequestedDemo.current;
+    if (isDemoMode && !hasHadSession.current) {
+      if (!hasRequestedDemo.current) {
+        hasRequestedDemo.current = true;
+        void startDemoSession().then((result) => {
+          // The status transitions inside startDemoSession re-run this
+          // effect, and the restore-on-failure path lands back on
+          // "anonymous"; this flag routes that re-run to the login redirect.
+          if (!result.ok) {
+            demoRequestFailed.current = true;
+          }
+        });
+        return;
+      }
 
-    if (isDemoMode && isNewVisitor) {
-      hasRequestedDemo.current = true;
-      void startDemoSession();
-      return;
+      if (!demoRequestFailed.current) {
+        // The request is still in flight. This effect can re-fire before the
+        // "loading" status commits (e.g. searchParams identity changes right
+        // after a client-side navigation); redirecting here would bounce a
+        // provisioning visitor to /login.
+        return;
+      }
     }
 
     // Include the query string so signing back in restores the full location,
