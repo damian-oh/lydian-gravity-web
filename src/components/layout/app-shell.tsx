@@ -222,7 +222,10 @@ export function AppShell({ children }: AppShellProps) {
         onCancel={() => setPendingLeave(null)}
       />
 
-      <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      {/* overflow-clip (not -hidden) keeps the decorative orbs clipped without
+          creating a scroll container, which would break position: sticky for
+          descendants like the editor's theory sidebar. */}
+      <div className="relative min-h-screen overflow-clip bg-background text-foreground">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.16),_transparent_30%)] dark:bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.14),_transparent_28%)]" />
         <div className="absolute left-[-10rem] top-16 h-72 w-72 rounded-full bg-highlight/55 blur-3xl" />
         <div className="absolute bottom-[-8rem] right-[-5rem] h-80 w-80 rounded-full bg-accent/15 blur-3xl" />

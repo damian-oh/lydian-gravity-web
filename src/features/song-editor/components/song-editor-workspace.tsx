@@ -393,7 +393,9 @@ function buildChordSlots(
   const chordByBarIndex = new Map<number, SongChord>();
 
   [...section.chords]
-    .sort((left, right) => left.startBeat - right.startBeat || left.id - right.id)
+    .sort(
+      (left, right) => left.startBeat - right.startBeat || left.id - right.id,
+    )
     .forEach((chord) => {
       const barIndex = Math.floor(chord.startBeat / beatsPerBar);
 
@@ -1503,213 +1505,229 @@ export function SongEditorWorkspace({
         </div>
       </PanelShell>
 
-      <div className="space-y-6">
-        <TransportBar
-          sectionLabel={activeSectionLabel}
-          tempoBpm={song.tempoBpm}
-          timeSignature={song.timeSignature}
-          transport={transportState}
-          actions={transportActions}
-        />
-
-        <div className="flex gap-2 lg:hidden">
-          {[
-            { key: "progression", label: "Progression" },
-            { key: "melody", label: "Melody" },
-          ].map((option) => (
-            <button
-              key={option.key}
-              type="button"
-              onClick={() =>
-                setMobileView(option.key as "progression" | "melody")
-              }
-              className={cn(
-                "rounded-full border px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-accent/15",
-                mobileView === option.key
-                  ? "border-accent/35 bg-accent-soft text-foreground"
-                  : "border-highlight/80 bg-surface text-foreground/72",
-              )}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-
-        <PanelShell
-          eyebrow="Harmony Lane"
-          title="Chord progression"
-          description="Follow the section timeline left to right and compare beat span, note spellings, and source mode."
-          className={cn(
-            mobileView === "progression" ? "block" : "hidden",
-            "lg:block",
-          )}
-          bodyClassName="space-y-5"
-        >
-          <ChordPickerDesktopPopover
-            pickerState={pickerState}
-            catalog={chordCatalog}
-            currentChord={pickerChord}
-            onClose={() => setPickerState(null)}
-            onSelect={handleSelectChordCatalogItem}
+      {/* At 2xl the theory sidebar splits off and stays sticky so suggestions
+          remain visible while editing the lanes; below 2xl everything stacks
+          exactly as before. min-w-0 keeps the lanes' minWidth from blowing
+          out the grid track. */}
+      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_26rem] 2xl:items-start">
+        <div className="min-w-0 space-y-6">
+          <TransportBar
+            sectionLabel={activeSectionLabel}
+            tempoBpm={song.tempoBpm}
+            timeSignature={song.timeSignature}
+            transport={transportState}
+            actions={transportActions}
           />
 
-          <div className="space-y-4 lg:hidden">
-            <TimelineBarHeader timeline={activeTimeline} />
-
-            <div className="grid gap-3 md:grid-cols-2">
-              {activeChordSlots.map((slot) => (
-                <ChordSlotCard
-                  key={slot.barIndex}
-                  slot={slot}
-                  masterMode={song.masterMode}
-                  selected={slot.chord?.id === selectedChord?.id}
-                  playing={playheadActive && slot.barIndex === playheadBarIndex}
-                  pickerOpen={
-                    pickerState?.sectionId === activeSection.id &&
-                    pickerState.barIndex === slot.barIndex
-                  }
-                  onSelect={() => {
-                    if (slot.chord) {
-                      setSelectedChordId(slot.chord.id);
-                    }
-                  }}
-                  onOpenPicker={() => handleOpenChordPicker(slot)}
-                  onRemove={() => {
-                    if (slot.chord) {
-                      handleRemoveChord(slot.chord.id);
-                    }
-                  }}
-                />
-              ))}
-            </div>
+          <div className="flex gap-2 lg:hidden">
+            {[
+              { key: "progression", label: "Progression" },
+              { key: "melody", label: "Melody" },
+            ].map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                onClick={() =>
+                  setMobileView(option.key as "progression" | "melody")
+                }
+                className={cn(
+                  "rounded-full border px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-accent/15",
+                  mobileView === option.key
+                    ? "border-accent/35 bg-accent-soft text-foreground"
+                    : "border-highlight/80 bg-surface text-foreground/72",
+                )}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
 
-          <div className="hidden lg:block">
-            <div className="-mx-1 overflow-x-auto px-1 pb-2">
-              <div
-                className="space-y-4"
-                style={{ minWidth: desktopTimelineMinWidth }}
-              >
-                <TimelineBarHeader
-                  timeline={activeTimeline}
-                  columnTemplate={desktopTimelineColumns}
-                  expanded
-                />
+          <PanelShell
+            eyebrow="Harmony Lane"
+            title="Chord progression"
+            description="Follow the section timeline left to right and compare beat span, note spellings, and source mode."
+            className={cn(
+              mobileView === "progression" ? "block" : "hidden",
+              "lg:block",
+            )}
+            bodyClassName="space-y-5"
+          >
+            <ChordPickerDesktopPopover
+              pickerState={pickerState}
+              catalog={chordCatalog}
+              currentChord={pickerChord}
+              onClose={() => setPickerState(null)}
+              onSelect={handleSelectChordCatalogItem}
+            />
 
-                <div className="relative overflow-hidden rounded-[1.4rem] border border-highlight/70 bg-background/45">
-                  {playheadActive ? (
-                    <div
-                      aria-hidden="true"
-                      className="pointer-events-none absolute inset-y-0 z-10 w-0.5 bg-accent shadow-[0_0_8px_rgba(245,158,11,0.6)]"
-                      style={{
-                        left: `${(transportState.currentBeat / activeTimeline.totalBeats) * 100}%`,
-                      }}
-                    />
-                  ) : null}
-                  <div
-                    className="pointer-events-none absolute inset-0 grid"
-                    style={{
-                      gridTemplateColumns: desktopTimelineColumns,
-                    }}
-                  >
-                    {Array.from(
-                      { length: activeTimeline.totalBeats },
-                      (_, index) => (
-                        <div
-                          key={index}
-                          className={cn(
-                            "border-r border-highlight/50",
-                            (index + 1) % activeTimeline.beatsPerBar === 0 ||
-                              index === activeTimeline.totalBeats - 1
-                              ? "bg-accent/5"
-                              : "bg-transparent",
-                          )}
-                        />
-                      ),
-                    )}
-                  </div>
+            <div className="space-y-4 lg:hidden">
+              <TimelineBarHeader timeline={activeTimeline} />
 
-                  <div
-                    className="relative grid auto-rows-fr"
-                    style={{
-                      gridTemplateColumns: desktopTimelineColumns,
+              <div className="grid gap-3 md:grid-cols-2">
+                {activeChordSlots.map((slot) => (
+                  <ChordSlotCard
+                    key={slot.barIndex}
+                    slot={slot}
+                    masterMode={song.masterMode}
+                    selected={slot.chord?.id === selectedChord?.id}
+                    playing={
+                      playheadActive && slot.barIndex === playheadBarIndex
+                    }
+                    pickerOpen={
+                      pickerState?.sectionId === activeSection.id &&
+                      pickerState.barIndex === slot.barIndex
+                    }
+                    onSelect={() => {
+                      if (slot.chord) {
+                        setSelectedChordId(slot.chord.id);
+                      }
                     }}
-                  >
-                    {activeChordSlots.map((slot) => (
+                    onOpenPicker={() => handleOpenChordPicker(slot)}
+                    onRemove={() => {
+                      if (slot.chord) {
+                        handleRemoveChord(slot.chord.id);
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="hidden lg:block">
+              <div className="-mx-1 overflow-x-auto px-1 pb-2">
+                <div
+                  className="space-y-4"
+                  style={{ minWidth: desktopTimelineMinWidth }}
+                >
+                  <TimelineBarHeader
+                    timeline={activeTimeline}
+                    columnTemplate={desktopTimelineColumns}
+                    expanded
+                  />
+
+                  <div className="relative overflow-hidden rounded-[1.4rem] border border-highlight/70 bg-background/45">
+                    {playheadActive ? (
                       <div
-                        key={slot.barIndex}
-                        className="p-1.5"
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-y-0 z-10 w-0.5 bg-accent shadow-[0_0_8px_rgba(245,158,11,0.6)]"
                         style={{
-                          gridColumn: `${slot.startBeat + 1} / span ${activeTimeline.beatsPerBar}`,
+                          left: `${(transportState.currentBeat / activeTimeline.totalBeats) * 100}%`,
                         }}
-                      >
-                        <ChordSlotCard
-                          slot={slot}
-                          masterMode={song.masterMode}
-                          selected={slot.chord?.id === selectedChord?.id}
-                          playing={
-                            playheadActive && slot.barIndex === playheadBarIndex
-                          }
-                          pickerOpen={
-                            pickerState?.sectionId === activeSection.id &&
-                            pickerState.barIndex === slot.barIndex
-                          }
-                          onSelect={() => {
-                            if (slot.chord) {
-                              setSelectedChordId(slot.chord.id);
-                            }
+                      />
+                    ) : null}
+                    <div
+                      className="pointer-events-none absolute inset-0 grid"
+                      style={{
+                        gridTemplateColumns: desktopTimelineColumns,
+                      }}
+                    >
+                      {Array.from(
+                        { length: activeTimeline.totalBeats },
+                        (_, index) => (
+                          <div
+                            key={index}
+                            className={cn(
+                              "border-r border-highlight/50",
+                              (index + 1) % activeTimeline.beatsPerBar === 0 ||
+                                index === activeTimeline.totalBeats - 1
+                                ? "bg-accent/5"
+                                : "bg-transparent",
+                            )}
+                          />
+                        ),
+                      )}
+                    </div>
+
+                    <div
+                      className="relative grid auto-rows-fr"
+                      style={{
+                        gridTemplateColumns: desktopTimelineColumns,
+                      }}
+                    >
+                      {activeChordSlots.map((slot) => (
+                        <div
+                          key={slot.barIndex}
+                          className="p-1.5"
+                          style={{
+                            gridColumn: `${slot.startBeat + 1} / span ${activeTimeline.beatsPerBar}`,
                           }}
-                          onOpenPicker={() => handleOpenChordPicker(slot)}
-                          onRemove={() => {
-                            if (slot.chord) {
-                              handleRemoveChord(slot.chord.id);
+                        >
+                          <ChordSlotCard
+                            slot={slot}
+                            masterMode={song.masterMode}
+                            selected={slot.chord?.id === selectedChord?.id}
+                            playing={
+                              playheadActive &&
+                              slot.barIndex === playheadBarIndex
                             }
-                          }}
-                          className="h-full min-h-[11rem]"
-                        />
-                      </div>
-                    ))}
+                            pickerOpen={
+                              pickerState?.sectionId === activeSection.id &&
+                              pickerState.barIndex === slot.barIndex
+                            }
+                            onSelect={() => {
+                              if (slot.chord) {
+                                setSelectedChordId(slot.chord.id);
+                              }
+                            }}
+                            onOpenPicker={() => handleOpenChordPicker(slot)}
+                            onRemove={() => {
+                              if (slot.chord) {
+                                handleRemoveChord(slot.chord.id);
+                              }
+                            }}
+                            className="h-full min-h-[11rem]"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <ChordPickerMobileSheet
-            pickerState={pickerState}
-            catalog={chordCatalog}
-            currentChord={pickerChord}
-            onClose={() => setPickerState(null)}
-            onSelect={handleSelectChordCatalogItem}
+            <ChordPickerMobileSheet
+              pickerState={pickerState}
+              catalog={chordCatalog}
+              currentChord={pickerChord}
+              onClose={() => setPickerState(null)}
+              onSelect={handleSelectChordCatalogItem}
+            />
+          </PanelShell>
+
+          <PanelShell
+            eyebrow="Melody Lane"
+            title="Melodic note sketch"
+            description="Draw, move, resize, and remove quarter-beat notes while reading their gravity against the active harmony."
+            className={cn(
+              mobileView === "melody" ? "block" : "hidden",
+              "lg:block",
+            )}
+            bodyClassName="space-y-5"
+          >
+            <MelodyLaneEditor
+              sectionId={activeSection.id}
+              timeline={activeTimeline}
+              melodicNotes={activeSection.melodicNotes}
+              chordSlots={activeChordSlots}
+              selectedNoteId={selectedMelodyNoteId}
+              gravityByNoteId={melodyGravityByNoteId}
+              playheadBeat={playheadActive ? transportState.currentBeat : null}
+              onSelectNote={setSelectedMelodyNoteId}
+              onAddNote={handleAddMelodyNote}
+              onUpdateNote={handleUpdateMelodyNote}
+              onRemoveNote={handleRemoveMelodyNote}
+            />
+          </PanelShell>
+
+          <AudioPreviewPanel
+            waveform={transportState.waveform}
+            masterLevel={transportState.masterLevel}
+            onWaveformChange={transportActions.setWaveform}
+            onMasterLevelChange={transportActions.setMasterLevel}
           />
-        </PanelShell>
+        </div>
 
-        <PanelShell
-          eyebrow="Melody Lane"
-          title="Melodic note sketch"
-          description="Draw, move, resize, and remove quarter-beat notes while reading their gravity against the active harmony."
-          className={cn(
-            mobileView === "melody" ? "block" : "hidden",
-            "lg:block",
-          )}
-          bodyClassName="space-y-5"
-        >
-          <MelodyLaneEditor
-            sectionId={activeSection.id}
-            timeline={activeTimeline}
-            melodicNotes={activeSection.melodicNotes}
-            chordSlots={activeChordSlots}
-            selectedNoteId={selectedMelodyNoteId}
-            gravityByNoteId={melodyGravityByNoteId}
-            playheadBeat={playheadActive ? transportState.currentBeat : null}
-            onSelectNote={setSelectedMelodyNoteId}
-            onAddNote={handleAddMelodyNote}
-            onUpdateNote={handleUpdateMelodyNote}
-            onRemoveNote={handleRemoveMelodyNote}
-          />
-        </PanelShell>
-
-        <div className="grid gap-6 xl:grid-cols-2">
+        <aside className="space-y-6 2xl:sticky 2xl:top-6 2xl:max-h-[calc(100vh-3rem)] 2xl:overflow-y-auto">
           <TheoryPanel
             key={activeSection.id}
             song={song}
@@ -1719,13 +1737,7 @@ export function SongEditorWorkspace({
             selectedChord={selectedChord}
             selectedNoteId={selectedMelodyNoteId}
           />
-          <AudioPreviewPanel
-            waveform={transportState.waveform}
-            masterLevel={transportState.masterLevel}
-            onWaveformChange={transportActions.setWaveform}
-            onMasterLevelChange={transportActions.setMasterLevel}
-          />
-        </div>
+        </aside>
       </div>
     </div>
   );
