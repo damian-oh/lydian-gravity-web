@@ -937,56 +937,57 @@ export function SongEditorWorkspace({
     openChordPicker(slot, defaultTab);
   }
 
+  // The add/remove handlers below compute the next sections array and the new
+  // selection up front from current-render state, then set both with plain
+  // values. Assigning a variable from inside a setState updater and reading it
+  // afterwards is unreliable (the updater may not have run yet) and breaks
+  // under StrictMode and the React Compiler.
   function handleSelectChordCatalogItem(item: ChordCatalogItem) {
     if (!pickerState) {
       return;
     }
 
-    markArrangementDirty();
-    const targetSectionId = pickerState.sectionId;
-    const targetBarIndex = pickerState.barIndex;
+    const targetSection = sections.find(
+      (section) => section.id === pickerState.sectionId,
+    );
+    const slot = targetSection
+      ? buildChordSlots(targetSection, song.timeSignature).find(
+          (sectionSlot) => sectionSlot.barIndex === pickerState.barIndex,
+        )
+      : undefined;
+
+    if (!targetSection || !slot) {
+      setPickerState(null);
+
+      return;
+    }
+
     const beatsPerBar = getBeatsPerBar(song.timeSignature);
-    let nextSelectedChordId: number | null = null;
-
-    setSections((currentSections) =>
-      reindexSections(
-        currentSections.map((section) => {
-          if (section.id !== targetSectionId) {
-            return section;
-          }
-
-          const slot = buildChordSlots(section, song.timeSignature).find(
-            (sectionSlot) => sectionSlot.barIndex === targetBarIndex,
-          );
-
-          if (!slot) {
-            return section;
-          }
-
-          const nextChordId = getNextChordId(currentSections);
-          const remainingChords = section.chords.filter(
-            (chord) =>
-              Math.floor(chord.startBeat / beatsPerBar) !== targetBarIndex,
-          );
-          const nextChord = buildSongChordFromCatalogItem(
-            item,
-            section.id,
-            nextChordId,
-            slot,
-            beatsPerBar,
-          );
-
-          nextSelectedChordId = nextChord.id;
-
-          return {
-            ...section,
-            chords: sortAndReindexChords([...remainingChords, nextChord]),
-          };
-        }),
+    const remainingChords = targetSection.chords.filter(
+      (chord) =>
+        Math.floor(chord.startBeat / beatsPerBar) !== pickerState.barIndex,
+    );
+    const nextChord = buildSongChordFromCatalogItem(
+      item,
+      targetSection.id,
+      getNextChordId(sections),
+      slot,
+      beatsPerBar,
+    );
+    const nextSections = reindexSections(
+      sections.map((section) =>
+        section.id === targetSection.id
+          ? {
+              ...section,
+              chords: sortAndReindexChords([...remainingChords, nextChord]),
+            }
+          : section,
       ),
     );
 
-    setSelectedChordId(nextSelectedChordId);
+    markArrangementDirty();
+    setSections(nextSections);
+    setSelectedChordId(nextChord.id);
     setPickerState(null);
   }
 
@@ -1025,41 +1026,32 @@ export function SongEditorWorkspace({
   function handleAddMelodyNote(
     draft: Pick<MelodicNoteModel, "pitch" | "startBeat" | "durationBeats">,
   ) {
-    let nextSelectedMelodyNoteId: number | null = null;
-
-    markArrangementDirty();
-    setSections((currentSections) =>
-      reindexSections(
-        currentSections.map((section) => {
-          if (section.id !== activeSection.id) {
-            return section;
-          }
-
-          const nextNoteId = getNextMelodicNoteId(currentSections);
-          const nextNote = clampMelodicNote(
-            {
-              id: nextNoteId,
-              sectionId: section.id,
-              ...draft,
-            },
-            section.totalBeats,
-          );
-
-          nextSelectedMelodyNoteId = nextNote.id;
-
-          return {
-            ...section,
-            melodicNotes: normalizeMonophonicMelody(
-              [...section.melodicNotes, nextNote],
-              nextNote.id,
-              section.totalBeats,
-            ),
-          };
-        }),
+    const nextNote = clampMelodicNote(
+      {
+        id: getNextMelodicNoteId(sections),
+        sectionId: activeSection.id,
+        ...draft,
+      },
+      activeSection.totalBeats,
+    );
+    const nextSections = reindexSections(
+      sections.map((section) =>
+        section.id === activeSection.id
+          ? {
+              ...section,
+              melodicNotes: normalizeMonophonicMelody(
+                [...section.melodicNotes, nextNote],
+                nextNote.id,
+                section.totalBeats,
+              ),
+            }
+          : section,
       ),
     );
 
-    setSelectedMelodyNoteId(nextSelectedMelodyNoteId);
+    markArrangementDirty();
+    setSections(nextSections);
+    setSelectedMelodyNoteId(nextNote.id);
   }
 
   function handleUpdateMelodyNote(
