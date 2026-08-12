@@ -380,6 +380,10 @@ function normalizeMonophonicMelody(
   );
 }
 
+// The editor's model is one chord per bar. Data can still arrive with several
+// chords in a bar (older saves); the earliest one (lowest startBeat, then id)
+// represents the bar everywhere -- display, playback, and edits -- and any
+// hidden extras are dropped the first time their bar is changed or removed.
 function buildChordSlots(
   section: SongSectionModel,
   timeSignature: string,
@@ -388,19 +392,36 @@ function buildChordSlots(
   const timeline = buildTimelineSpec(section.totalBeats, timeSignature);
   const chordByBarIndex = new Map<number, SongChord>();
 
-  section.chords.forEach((chord) => {
-    const barIndex = Math.floor(chord.startBeat / beatsPerBar);
+  [...section.chords]
+    .sort((left, right) => left.startBeat - right.startBeat || left.id - right.id)
+    .forEach((chord) => {
+      const barIndex = Math.floor(chord.startBeat / beatsPerBar);
 
-    if (!chordByBarIndex.has(barIndex)) {
-      chordByBarIndex.set(barIndex, chord);
-    }
-  });
+      if (!chordByBarIndex.has(barIndex)) {
+        chordByBarIndex.set(barIndex, chord);
+      }
+    });
 
   return Array.from({ length: timeline.barCount }, (_, barIndex) => ({
     barIndex,
     startBeat: barIndex * beatsPerBar,
     chord: chordByBarIndex.get(barIndex) ?? null,
   }));
+}
+
+function getPlayableChords(
+  section: SongSectionModel | undefined,
+  timeSignature: string,
+): readonly SongChord[] {
+  if (!section) {
+    return [];
+  }
+
+  // Play exactly what the harmony lane shows: the slot winners, not every
+  // stored chord row.
+  return buildChordSlots(section, timeSignature).flatMap((slot) =>
+    slot.chord ? [slot.chord] : [],
+  );
 }
 
 function getChordPickerDefaultTab(
@@ -717,7 +738,7 @@ export function SongEditorWorkspace({
       totalBeats: activeSection?.totalBeats ?? 1,
       tempoBpm: song.tempoBpm,
       timeSignature: song.timeSignature,
-      chords: activeSection?.chords ?? [],
+      chords: getPlayableChords(activeSection, song.timeSignature),
       melodicNotes: activeSection?.melodicNotes ?? [],
     });
 
@@ -992,34 +1013,39 @@ export function SongEditorWorkspace({
   }
 
   function handleRemoveChord(chordId: number) {
-    let nextSelectedChordId: number | null = null;
+    const targetChord = activeSection.chords.find(
+      (chord) => chord.id === chordId,
+    );
 
-    markArrangementDirty();
-    setSections((currentSections) =>
-      reindexSections(
-        currentSections.map((section) => {
-          if (section.id !== activeSection.id) {
-            return section;
-          }
+    if (!targetChord) {
+      return;
+    }
 
-          const remainingChords = sortAndReindexChords(
-            section.chords.filter((chord) => chord.id !== chordId),
-          );
-
-          nextSelectedChordId =
-            selectedChordId === chordId
-              ? (remainingChords[0]?.id ?? null)
-              : selectedChordId;
-
-          return {
-            ...section,
-            chords: remainingChords,
-          };
-        }),
+    // Removing a bar's chord clears the whole bar, matching how selecting a
+    // replacement clears it; hidden extra chords in the bar go with it.
+    const beatsPerBar = getBeatsPerBar(song.timeSignature);
+    const targetBarIndex = Math.floor(targetChord.startBeat / beatsPerBar);
+    const remainingChords = sortAndReindexChords(
+      activeSection.chords.filter(
+        (chord) => Math.floor(chord.startBeat / beatsPerBar) !== targetBarIndex,
+      ),
+    );
+    const removedSelection = !remainingChords.some(
+      (chord) => chord.id === selectedChordId,
+    );
+    const nextSections = reindexSections(
+      sections.map((section) =>
+        section.id === activeSection.id
+          ? { ...section, chords: remainingChords }
+          : section,
       ),
     );
 
-    setSelectedChordId(nextSelectedChordId);
+    markArrangementDirty();
+    setSections(nextSections);
+    setSelectedChordId(
+      removedSelection ? (remainingChords[0]?.id ?? null) : selectedChordId,
+    );
     setPickerState(null);
   }
 
