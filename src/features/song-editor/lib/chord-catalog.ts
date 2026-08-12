@@ -151,12 +151,44 @@ const scaleDegreeLabelByOffset: Readonly<Record<number, string>> = {
   11: "VII",
 };
 
-const flatPreferredTonics = new Set(["F", "Bb", "Eb", "Ab", "Db", "Gb", "Cb"]);
+// Semitone offset from a mode's tonic down to its relative major (ionian)
+// tonic: D dorian shares its key signature with C major, so dorian maps to 2.
+const modeTonicOffsets: Readonly<Record<ModeName, number>> = {
+  ionian: 0,
+  dorian: 2,
+  phrygian: 4,
+  lydian: 5,
+  mixolydian: 7,
+  aeolian: 9,
+  locrian: 11,
+};
 
-function getPreferredChromatic(tonalCenter: string) {
-  return tonalCenter.includes("b") || flatPreferredTonics.has(tonalCenter)
-    ? flatChromatic
-    : sharpChromatic;
+// Semitone classes of the flat-side major keys F, Bb, Eb, Ab, and Db.
+const flatMajorSemitones = new Set([5, 10, 3, 8, 1]);
+
+function getPreferredChromatic(tonalCenter: string, mode = "ionian") {
+  // The sharp/flat side of a key is a property of the key signature, which
+  // depends on tonic AND mode: C dorian carries the two flats of Bb major.
+  // Limitation: the 12-name tables cannot spell E#/B#/Cb/Fb or double
+  // accidentals, so remote keys get single-accidental respellings. Must stay
+  // in lockstep with the backend's music_theory.py.
+  if (tonalCenter.includes("b")) {
+    return flatChromatic;
+  }
+
+  if (tonalCenter.includes("#")) {
+    return sharpChromatic;
+  }
+
+  const modeOffset =
+    modeTonicOffsets[
+      (supportedModes.includes(mode as ModeName) ? mode : "ionian") as ModeName
+    ];
+  const relativeMajor = normalizeSemitone(
+    (noteToSemitone[tonalCenter] ?? 0) - modeOffset,
+  );
+
+  return flatMajorSemitones.has(relativeMajor) ? flatChromatic : sharpChromatic;
 }
 
 function normalizeSemitone(value: number) {
@@ -242,7 +274,7 @@ function buildModeSeventhChords(
   tonalCenter: string,
   mode: string,
 ): readonly BuiltScaleChord[] {
-  const chromatic = getPreferredChromatic(tonalCenter);
+  const chromatic = getPreferredChromatic(tonalCenter, mode);
   const scale = getModeIntervals(mode);
 
   return scale.map((rootOffset, degreeIndex) => {
@@ -269,8 +301,8 @@ function buildModeSeventhChords(
 function buildSecondaryDominant(
   targetChord: BuiltScaleChord,
   tonalCenter: string,
+  chromatic = getPreferredChromatic(tonalCenter),
 ): ChordCatalogItem {
-  const chromatic = getPreferredChromatic(tonalCenter);
   const dominantRoot = getNoteAtInterval(targetChord.root, 7, chromatic);
   const quality: SeventhChordQuality = "7";
 
@@ -326,6 +358,7 @@ export function buildChordCatalog(
   masterMode: string,
 ): ChordCatalog {
   const diatonicChords = buildModeSeventhChords(masterTonalCenter, masterMode);
+  const masterChromatic = getPreferredChromatic(masterTonalCenter, masterMode);
   const diatonicSignatures = new Set(
     diatonicChords.map((chord) => getChordSignature(chord)),
   );
@@ -357,7 +390,7 @@ export function buildChordCatalog(
       items: diatonicChords
         .slice(1)
         .map((targetChord) =>
-          buildSecondaryDominant(targetChord, masterTonalCenter),
+          buildSecondaryDominant(targetChord, masterTonalCenter, masterChromatic),
         ),
     },
   ];
