@@ -90,6 +90,8 @@ const noteToSemitone: Readonly<Record<string, number>> = {
   Cb: 11,
 };
 
+// One grid beat is one denominator unit (an eighth in 6/8), so a bar spans
+// `numerator` grid beats everywhere in the editor and the transport.
 function getBeatsPerBar(timeSignature: string) {
   const [numerator] = timeSignature.split("/");
   const beatsPerBar = Number.parseInt(numerator ?? "", 10);
@@ -99,6 +101,20 @@ function getBeatsPerBar(timeSignature: string) {
   }
 
   return beatsPerBar;
+}
+
+// tempoBpm counts quarter notes, while the grid counts denominator units, so
+// a grid beat advances denominator/4 times as fast as a quarter note. Without
+// this scale a 6/8 bar would play six quarter notes long.
+function getBeatUnitScale(timeSignature: string) {
+  const [, denominator] = timeSignature.split("/");
+  const value = Number.parseInt(denominator ?? "", 10);
+
+  if (!Number.isFinite(value) || value <= 0) {
+    return 1;
+  }
+
+  return value / 4;
 }
 
 function clampBeat(beat: number, totalBeats: number) {
@@ -166,6 +182,10 @@ export function useSectionTransport({
 
   const beatsPerBar = useMemo(
     () => getBeatsPerBar(timeSignature),
+    [timeSignature],
+  );
+  const beatUnitScale = useMemo(
+    () => getBeatUnitScale(timeSignature),
     [timeSignature],
   );
   const safeTotalBeats = Math.max(1, totalBeats);
@@ -293,7 +313,7 @@ export function useSectionTransport({
 
   const triggerPlaybackEvents = useCallback(
     (fromBeat: number, toBeat: number) => {
-      const secondsPerBeat = 60 / Math.max(1, tempoBpm);
+      const secondsPerBeat = 60 / Math.max(1, tempoBpm) / beatUnitScale;
       const eventKeys = triggeredEventKeysRef.current;
 
       function isCrossed(startBeat: number) {
@@ -360,6 +380,7 @@ export function useSectionTransport({
       }
     },
     [
+      beatUnitScale,
       beatsPerBar,
       chords,
       melodicNotes,
@@ -391,7 +412,7 @@ export function useSectionTransport({
 
       const deltaMilliseconds = timestamp - lastFrameTimeRef.current;
       lastFrameTimeRef.current = timestamp;
-      const deltaBeats = (deltaMilliseconds / 60000) * tempoBpm;
+      const deltaBeats = (deltaMilliseconds / 60000) * tempoBpm * beatUnitScale;
       const baseCurrentBeat = clampBeat(currentBeatRef.current, safeTotalBeats);
       const nextBeat = baseCurrentBeat + deltaBeats;
 
@@ -435,6 +456,7 @@ export function useSectionTransport({
       lastFrameTimeRef.current = null;
     };
   }, [
+    beatUnitScale,
     loopEnabled,
     playbackStatus,
     safeTotalBeats,

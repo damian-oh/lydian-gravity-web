@@ -74,6 +74,8 @@ function formatBeatWindow(startBeat: number, durationBeats: number) {
   return `Beat ${startBeat + 1} to ${endBeat}`;
 }
 
+// One grid beat is one denominator unit (an eighth in 6/8), so a bar always
+// spans `numerator` grid beats; the transport converts to quarter-note tempo.
 function getBeatsPerBar(timeSignature: string) {
   const [numerator] = timeSignature.split("/");
   const beatsPerBar = Number.parseInt(numerator ?? "", 10);
