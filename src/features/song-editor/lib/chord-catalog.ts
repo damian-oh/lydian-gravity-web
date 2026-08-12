@@ -143,7 +143,6 @@ const scaleDegreeLabelByOffset: Readonly<Record<number, string>> = {
   3: "bIII",
   4: "III",
   5: "IV",
-  6: "#IV",
   7: "V",
   8: "bVI",
   9: "VI",
@@ -211,8 +210,22 @@ function getNoteAtInterval(
   return chromatic[normalizeSemitone(baseSemitone + semitoneOffset)];
 }
 
-function buildRomanNumeral(rootOffset: number, quality: SeventhChordQuality) {
-  const baseLabel = scaleDegreeLabelByOffset[rootOffset] ?? "I";
+function getScaleDegreeLabel(rootOffset: number, mode = "ionian") {
+  if (rootOffset === 6) {
+    // Offset 6 is diatonic only in lydian (#IV) and locrian, where it is the
+    // mode's own diminished fifth, not a raised fourth.
+    return mode === "locrian" ? "bV" : "#IV";
+  }
+
+  return scaleDegreeLabelByOffset[rootOffset] ?? "I";
+}
+
+function buildRomanNumeral(
+  rootOffset: number,
+  quality: SeventhChordQuality,
+  mode = "ionian",
+) {
+  const baseLabel = getScaleDegreeLabel(rootOffset, mode);
 
   if (quality === "min7" || quality === "min7b5") {
     return `${baseLabel.toLowerCase()}${romanNumeralSuffixMap[quality]}`;
@@ -292,8 +305,8 @@ function buildModeSeventhChords(
       quality,
       chordName: `${root}${qualitySuffixMap[quality]}`,
       notes: buildChordNotes(root, quality, chromatic),
-      romanNumeral: buildRomanNumeral(rootOffset, quality),
-      degreeLabel: scaleDegreeLabelByOffset[rootOffset] ?? "I",
+      romanNumeral: buildRomanNumeral(rootOffset, quality, mode),
+      degreeLabel: getScaleDegreeLabel(rootOffset, mode),
     };
   });
 }
