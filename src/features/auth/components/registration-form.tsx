@@ -108,20 +108,25 @@ export function RegistrationForm() {
     setIsSubmitting(true);
     setErrors({});
 
-    const result = await registerUser({
-      email: values.email.trim(),
-      password: values.password,
-    });
-
-    if (result.ok) {
-      startTransition(() => {
-        router.push("/login?registered=1");
+    try {
+      const result = await registerUser({
+        email: values.email.trim(),
+        password: values.password,
       });
-      return;
-    }
 
-    setErrors({ form: result.message });
-    setIsSubmitting(false);
+      if (result.ok) {
+        startTransition(() => {
+          router.push("/login?registered=1");
+        });
+        return;
+      }
+
+      setErrors({ form: result.message });
+    } finally {
+      // Always re-enable the form: an interrupted navigation on the success
+      // path must not leave the button permanently dead.
+      setIsSubmitting(false);
+    }
   }
 
   return (
