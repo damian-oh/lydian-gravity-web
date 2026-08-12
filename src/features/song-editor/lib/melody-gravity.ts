@@ -104,8 +104,6 @@ const intervalLabelBySemitone: Readonly<Record<number, string>> = {
   11: "7",
 };
 
-const flatPreferredTonics = new Set(["F", "Bb", "Eb", "Ab", "Db", "Gb", "Cb"]);
-
 function normalizeSemitone(value: number) {
   return ((value % 12) + 12) % 12;
 }
@@ -120,24 +118,14 @@ function getModeIntervals(mode: string) {
   ];
 }
 
-function getPreferredChromatic(tonalCenter: string) {
-  return tonalCenter.includes("b") || flatPreferredTonics.has(tonalCenter)
-    ? ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
-    : ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-}
-
-function getNoteAtInterval(tonalCenter: string, semitoneOffset: number) {
-  const chromatic = getPreferredChromatic(tonalCenter);
+function buildModePitchCollection(tonalCenter: string, mode: string) {
+  // Works purely in semitone classes; note spelling (the chord catalog's
+  // concern) never affects gravity math.
   const baseSemitone = noteToSemitone[tonalCenter] ?? 0;
 
-  return chromatic[normalizeSemitone(baseSemitone + semitoneOffset)];
-}
-
-function buildModePitchCollection(tonalCenter: string, mode: string) {
   return new Set(
-    getModeIntervals(mode).map(
-      (interval) =>
-        noteToSemitone[getNoteAtInterval(tonalCenter, interval)] ?? 0,
+    getModeIntervals(mode).map((interval) =>
+      normalizeSemitone(baseSemitone + interval),
     ),
   );
 }
