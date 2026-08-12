@@ -165,7 +165,7 @@ const modeTonicOffsets: Readonly<Record<ModeName, number>> = {
 // Semitone classes of the flat-side major keys F, Bb, Eb, Ab, and Db.
 const flatMajorSemitones = new Set([5, 10, 3, 8, 1]);
 
-function getPreferredChromatic(tonalCenter: string, mode = "ionian") {
+export function getPreferredChromatic(tonalCenter: string, mode = "ionian") {
   // The sharp/flat side of a key is a property of the key signature, which
   // depends on tonic AND mode: C dorian carries the two flats of Bb major.
   // Limitation: the 12-name tables cannot spell E#/B#/Cb/Fb or double
@@ -283,7 +283,7 @@ function buildChordNotes(
   );
 }
 
-function buildModeSeventhChords(
+export function buildModeSeventhChords(
   tonalCenter: string,
   mode: string,
 ): readonly BuiltScaleChord[] {
@@ -311,7 +311,7 @@ function buildModeSeventhChords(
   });
 }
 
-function buildSecondaryDominant(
+export function buildSecondaryDominant(
   targetChord: BuiltScaleChord,
   tonalCenter: string,
   chromatic = getPreferredChromatic(tonalCenter),
