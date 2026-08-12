@@ -23,6 +23,7 @@ import {
   getStoredAuthToken,
   storeAuthToken,
 } from "@/features/auth/lib/auth-token";
+import { setUnauthorizedHandler } from "@/lib/api/api-client";
 
 type AuthStatus = "loading" | "authenticated" | "anonymous";
 
@@ -106,6 +107,14 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       window.clearTimeout(timeoutId);
     };
   }, [loadCurrentUser, logout]);
+
+  useEffect(() => {
+    setUnauthorizedHandler(logout);
+
+    return () => {
+      setUnauthorizedHandler(null);
+    };
+  }, [logout]);
 
   const login = useCallback(
     async (credentials: AuthCredentials) => {

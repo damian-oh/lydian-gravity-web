@@ -15,6 +15,15 @@ type ApiFetchOptions = Omit<RequestInit, "headers"> & {
   token?: string | null;
 };
 
+// Called when a token-authenticated request comes back 401 (expired or revoked
+// session). The auth provider registers its logout here so any screen's fetch
+// tears the stale session down instead of leaving the app wedged.
+let onUnauthorized: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  onUnauthorized = handler;
+}
+
 const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1";
 
@@ -71,6 +80,12 @@ export async function apiFetch<T>(
     const body = await parseResponseBody(response);
 
     if (!response.ok) {
+      if (response.status === 401 && token) {
+        // Only token-authenticated calls: a failed login form's own 401 is
+        // not a session expiry.
+        onUnauthorized?.();
+      }
+
       throw new ApiError(
         response.status,
         getErrorMessage(response.status, body),
