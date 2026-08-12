@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { PanelShell } from "@/components/ui/panel-shell";
 import { AudioPreviewPanel } from "@/features/audio-preview/components/audio-preview-panel";
@@ -411,6 +411,10 @@ function buildChordSlots(
   }));
 }
 
+// Shared fallback so the transport's melody input keeps a stable identity
+// when no section is active.
+const emptyMelodicNotes: readonly MelodicNoteModel[] = [];
+
 function getPlayableChords(
   section: SongSectionModel | undefined,
   timeSignature: string,
@@ -751,6 +755,13 @@ export function SongEditorWorkspace({
 
   const activeSection =
     sections.find((section) => section.id === activeSectionId) ?? sections[0];
+  // Identity-stable transport inputs: the playhead re-renders this component
+  // every frame during playback, and a fresh chords array per render would
+  // make the transport's playback effect tear down and re-arm each frame.
+  const playableChords = useMemo(
+    () => getPlayableChords(activeSection, song.timeSignature),
+    [activeSection, song.timeSignature],
+  );
   const { state: transportState, actions: transportActions } =
     useSectionTransport({
       scopeKey: transportScopeKey,
@@ -758,8 +769,8 @@ export function SongEditorWorkspace({
       totalBeats: activeSection?.totalBeats ?? 1,
       tempoBpm: song.tempoBpm,
       timeSignature: song.timeSignature,
-      chords: getPlayableChords(activeSection, song.timeSignature),
-      melodicNotes: activeSection?.melodicNotes ?? [],
+      chords: playableChords,
+      melodicNotes: activeSection?.melodicNotes ?? emptyMelodicNotes,
     });
 
   useEffect(() => {

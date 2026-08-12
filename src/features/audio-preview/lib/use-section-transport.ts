@@ -490,7 +490,11 @@ export function useSectionTransport({
         cancelAnimationFrame(animationFrameIdRef.current);
         animationFrameIdRef.current = null;
       }
-      lastFrameTimeRef.current = null;
+      // Deliberately keep lastFrameTimeRef: this cleanup also runs when a dep
+      // changes identity mid-playback, and re-seeding the timestamp there
+      // would discard the elapsed time since the last tick — enough of those
+      // re-arms and playback audibly drags behind the tempo. The not-playing
+      // branch above resets the timestamp when playback actually stops.
     };
   }, [
     beatUnitScale,
