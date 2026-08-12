@@ -44,6 +44,8 @@ type MelodyLaneEditorProps = Readonly<{
   chordSlots: readonly MelodyChordSlot[];
   selectedNoteId: number | null;
   gravityByNoteId: ReadonlyMap<number, MelodyGravityResult>;
+  /** Transport position in beats; null hides the playhead (stopped). */
+  playheadBeat?: number | null;
   onSelectNote: (noteId: number | null) => void;
   onAddNote: (
     draft: Pick<MelodicNoteModel, "pitch" | "startBeat" | "durationBeats">,
@@ -90,10 +92,7 @@ type ResizeEndGesture = Readonly<{
 }>;
 
 type MelodyGesture =
-  | DrawGesture
-  | MoveGesture
-  | ResizeStartGesture
-  | ResizeEndGesture;
+  DrawGesture | MoveGesture | ResizeStartGesture | ResizeEndGesture;
 
 const minPitch = 24;
 const maxPitch = 107;
@@ -157,6 +156,7 @@ export function MelodyLaneEditor({
   chordSlots,
   selectedNoteId,
   gravityByNoteId,
+  playheadBeat = null,
   onSelectNote,
   onAddNote,
   onUpdateNote,
@@ -848,6 +848,18 @@ export function MelodyLaneEditor({
                     );
                   })}
                 </div>
+
+                {playheadBeat !== null ? (
+                  // Grid-content coordinates, so the line stays aligned with
+                  // notes and scrolls with the lane.
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-y-0 z-20 w-0.5 bg-accent shadow-[0_0_8px_rgba(245,158,11,0.6)]"
+                    style={{
+                      left: playheadBeat * beatWidth,
+                    }}
+                  />
+                ) : null}
               </div>
             </div>
           </div>

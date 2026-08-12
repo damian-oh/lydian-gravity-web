@@ -476,6 +476,7 @@ function ChordSlotCard({
   masterMode,
   selected,
   pickerOpen,
+  playing = false,
   onSelect,
   onOpenPicker,
   onRemove,
@@ -486,6 +487,7 @@ function ChordSlotCard({
   masterMode: string;
   selected: boolean;
   pickerOpen: boolean;
+  playing?: boolean;
   onSelect: () => void;
   onOpenPicker: () => void;
   onRemove: () => void;
@@ -502,6 +504,7 @@ function ChordSlotCard({
           pickerOpen
             ? "border-accent/35 bg-accent-soft/55"
             : "border-highlight/80 bg-background/35 hover:border-accent/25 hover:bg-background/55",
+          playing && "ring-2 ring-accent/60",
           className,
         )}
         style={style}
@@ -535,6 +538,7 @@ function ChordSlotCard({
         selected || pickerOpen
           ? "border-accent/35 bg-accent-soft/75"
           : "border-highlight/80 bg-background/45 hover:border-accent/25 hover:bg-background/70",
+        playing && "ring-2 ring-accent/60",
         className,
       )}
       style={style}
@@ -877,6 +881,12 @@ export function SongEditorWorkspace({
         ) ?? null)
       : null;
   const pickerChord = pickerSlot?.chord ?? null;
+  // Paused keeps the playhead visible where playback halted; only a full stop
+  // hides it.
+  const playheadActive = transportState.status !== "stopped";
+  const playheadBarIndex = Math.floor(
+    transportState.currentBeat / activeTimeline.beatsPerBar,
+  );
 
   function markArrangementDirty() {
     setDirty(true);
@@ -1553,6 +1563,7 @@ export function SongEditorWorkspace({
                   slot={slot}
                   masterMode={song.masterMode}
                   selected={slot.chord?.id === selectedChord?.id}
+                  playing={playheadActive && slot.barIndex === playheadBarIndex}
                   pickerOpen={
                     pickerState?.sectionId === activeSection.id &&
                     pickerState.barIndex === slot.barIndex
@@ -1586,6 +1597,15 @@ export function SongEditorWorkspace({
                 />
 
                 <div className="relative overflow-hidden rounded-[1.4rem] border border-highlight/70 bg-background/45">
+                  {playheadActive ? (
+                    <div
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-y-0 z-10 w-0.5 bg-accent shadow-[0_0_8px_rgba(245,158,11,0.6)]"
+                      style={{
+                        left: `${(transportState.currentBeat / activeTimeline.totalBeats) * 100}%`,
+                      }}
+                    />
+                  ) : null}
                   <div
                     className="pointer-events-none absolute inset-0 grid"
                     style={{
@@ -1627,6 +1647,9 @@ export function SongEditorWorkspace({
                           slot={slot}
                           masterMode={song.masterMode}
                           selected={slot.chord?.id === selectedChord?.id}
+                          playing={
+                            playheadActive && slot.barIndex === playheadBarIndex
+                          }
                           pickerOpen={
                             pickerState?.sectionId === activeSection.id &&
                             pickerState.barIndex === slot.barIndex
@@ -1678,6 +1701,7 @@ export function SongEditorWorkspace({
             chordSlots={activeChordSlots}
             selectedNoteId={selectedMelodyNoteId}
             gravityByNoteId={melodyGravityByNoteId}
+            playheadBeat={playheadActive ? transportState.currentBeat : null}
             onSelectNote={setSelectedMelodyNoteId}
             onAddNote={handleAddMelodyNote}
             onUpdateNote={handleUpdateMelodyNote}
