@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, type ReactNode } from "react";
 
 import { AppShell } from "@/components/layout/app-shell";
@@ -11,6 +11,7 @@ export function AuthenticatedAppShell({
   children,
 }: Readonly<{ children: ReactNode }>) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { startDemoSession, status } = useAuth();
   const hasRequestedDemo = useRef(false);
@@ -43,9 +44,12 @@ export function AuthenticatedAppShell({
       return;
     }
 
-    const next = encodeURIComponent(pathname);
+    // Include the query string so signing back in restores the full location,
+    // not just the pathname.
+    const search = searchParams.toString();
+    const next = encodeURIComponent(search ? `${pathname}?${search}` : pathname);
     router.replace(`/login?next=${next}`);
-  }, [pathname, router, startDemoSession, status]);
+  }, [pathname, router, searchParams, startDemoSession, status]);
 
   if (status !== "authenticated") {
     return (
