@@ -185,19 +185,15 @@ export function useSectionTransport({
   }, [scopeKey]);
 
   const play = useCallback(() => {
-    setBoundScopeKey(scopeKey);
+    const baseCurrentBeat = isCurrentScopeBound
+      ? clampBeat(currentBeatRef.current, safeTotalBeats)
+      : 0;
+    const nextBeat = baseCurrentBeat >= safeTotalBeats ? 0 : baseCurrentBeat;
+
+    currentBeatRef.current = nextBeat;
     triggeredEventKeysRef.current.clear();
-    setCurrentBeat((current) => {
-      const baseCurrentBeat = isCurrentScopeBound
-        ? clampBeat(current, safeTotalBeats)
-        : 0;
-
-      const nextBeat = baseCurrentBeat >= safeTotalBeats ? 0 : baseCurrentBeat;
-
-      currentBeatRef.current = nextBeat;
-
-      return nextBeat;
-    });
+    setCurrentBeat(nextBeat);
+    setBoundScopeKey(scopeKey);
     setStatus("playing");
   }, [isCurrentScopeBound, safeTotalBeats, scopeKey]);
 
@@ -375,6 +371,9 @@ export function useSectionTransport({
       return;
     }
 
+    // The tick works entirely on refs and calls setState with plain values:
+    // audio scheduling inside a state updater would run twice under
+    // StrictMode and is unsafe under the React Compiler.
     function tick(timestamp: number) {
       if (lastFrameTimeRef.current === null) {
         lastFrameTimeRef.current = timestamp;
@@ -383,49 +382,37 @@ export function useSectionTransport({
       const deltaMilliseconds = timestamp - lastFrameTimeRef.current;
       lastFrameTimeRef.current = timestamp;
       const deltaBeats = (deltaMilliseconds / 60000) * tempoBpm;
-      let reachedSectionEnd = false;
+      const baseCurrentBeat = clampBeat(currentBeatRef.current, safeTotalBeats);
+      const nextBeat = baseCurrentBeat + deltaBeats;
 
-      setCurrentBeat((current) => {
-        const baseCurrentBeat = isCurrentScopeBound
-          ? clampBeat(current, safeTotalBeats)
-          : 0;
-        const nextBeat = baseCurrentBeat + deltaBeats;
-
-        if (nextBeat < safeTotalBeats) {
-          triggerPlaybackEvents(baseCurrentBeat, nextBeat);
-          currentBeatRef.current = nextBeat;
-
-          return nextBeat;
-        }
-
-        if (loopEnabled) {
-          triggerPlaybackEvents(baseCurrentBeat, safeTotalBeats);
-          triggeredEventKeysRef.current.clear();
-          const wrappedBeat =
-            safeTotalBeats === 0 ? 0 : nextBeat % safeTotalBeats;
-
-          triggerPlaybackEvents(0, wrappedBeat);
-          currentBeatRef.current = wrappedBeat;
-
-          return wrappedBeat;
-        }
-
-        reachedSectionEnd = true;
-        triggerPlaybackEvents(baseCurrentBeat, safeTotalBeats);
-        currentBeatRef.current = safeTotalBeats;
-
-        return safeTotalBeats;
-      });
-
-      if (reachedSectionEnd) {
-        setStatus("stopped");
-        lastFrameTimeRef.current = null;
-        animationFrameIdRef.current = null;
+      if (nextBeat < safeTotalBeats) {
+        triggerPlaybackEvents(baseCurrentBeat, nextBeat);
+        currentBeatRef.current = nextBeat;
+        setCurrentBeat(nextBeat);
+        animationFrameIdRef.current = window.requestAnimationFrame(tick);
 
         return;
       }
 
-      animationFrameIdRef.current = window.requestAnimationFrame(tick);
+      if (loopEnabled) {
+        triggerPlaybackEvents(baseCurrentBeat, safeTotalBeats);
+        triggeredEventKeysRef.current.clear();
+        const wrappedBeat = nextBeat % safeTotalBeats;
+
+        triggerPlaybackEvents(0, wrappedBeat);
+        currentBeatRef.current = wrappedBeat;
+        setCurrentBeat(wrappedBeat);
+        animationFrameIdRef.current = window.requestAnimationFrame(tick);
+
+        return;
+      }
+
+      triggerPlaybackEvents(baseCurrentBeat, safeTotalBeats);
+      currentBeatRef.current = safeTotalBeats;
+      setCurrentBeat(safeTotalBeats);
+      setStatus("stopped");
+      lastFrameTimeRef.current = null;
+      animationFrameIdRef.current = null;
     }
 
     animationFrameIdRef.current = window.requestAnimationFrame(tick);
@@ -438,7 +425,6 @@ export function useSectionTransport({
       lastFrameTimeRef.current = null;
     };
   }, [
-    isCurrentScopeBound,
     loopEnabled,
     playbackStatus,
     safeTotalBeats,
