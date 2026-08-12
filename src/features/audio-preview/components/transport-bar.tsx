@@ -1,8 +1,10 @@
 "use client";
 
-import type {
-  TransportActions,
-  TransportState,
+import {
+  playbackWaveforms,
+  type PlaybackWaveform,
+  type TransportActions,
+  type TransportState,
 } from "@/features/audio-preview/lib/use-section-transport";
 import { cn } from "@/lib/cn";
 
@@ -13,7 +15,14 @@ type TransportBarProps = Readonly<{
   transport: TransportState;
   actions: Pick<
     TransportActions,
-    "pause" | "play" | "seek" | "stop" | "toggleLoop" | "toggleMetronome"
+    | "pause"
+    | "play"
+    | "seek"
+    | "setMasterLevel"
+    | "setWaveform"
+    | "stop"
+    | "toggleLoop"
+    | "toggleMetronome"
   >;
 }>;
 
@@ -25,6 +34,15 @@ function formatStatusLabel(status: TransportState["status"]) {
       return "Paused";
     default:
       return "Stopped";
+  }
+}
+
+function formatWaveformLabel(waveform: PlaybackWaveform) {
+  switch (waveform) {
+    case "sawtooth":
+      return "Saw";
+    default:
+      return waveform.charAt(0).toUpperCase() + waveform.slice(1);
   }
 }
 
@@ -196,6 +214,57 @@ export function TransportBar({
             className="mt-4 h-2 w-full cursor-pointer accent-[var(--accent)]"
             aria-label="Section playhead"
           />
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          <div className="rounded-[1.25rem] border border-highlight/70 bg-background/45 px-4 py-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-foreground/45">
+              Waveform
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {playbackWaveforms.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => actions.setWaveform(option)}
+                  className={cn(
+                    "rounded-full border px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-accent/15",
+                    transport.waveform === option
+                      ? "border-accent/40 bg-accent-soft text-foreground"
+                      : "border-highlight/80 bg-background/45 text-foreground/72 hover:border-accent/25 hover:text-foreground",
+                  )}
+                >
+                  {formatWaveformLabel(option)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[1.25rem] border border-highlight/70 bg-background/45 px-4 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-foreground/45">
+                Master Level
+              </p>
+              <p className="text-sm font-semibold text-muted">
+                {Math.round(transport.masterLevel * 100)}%
+              </p>
+            </div>
+
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={transport.masterLevel}
+              onChange={(event) =>
+                actions.setMasterLevel(
+                  Number.parseFloat(event.currentTarget.value),
+                )
+              }
+              className="mt-4 h-2 w-full cursor-pointer accent-[var(--accent)]"
+              aria-label="Master level"
+            />
+          </div>
         </div>
       </div>
     </section>

@@ -4,7 +4,6 @@ import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { PanelShell } from "@/components/ui/panel-shell";
-import { AudioPreviewPanel } from "@/features/audio-preview/components/audio-preview-panel";
 import { TransportBar } from "@/features/audio-preview/components/transport-bar";
 import { useSectionTransport } from "@/features/audio-preview/lib/use-section-transport";
 import { useAppShellNavigation } from "@/components/layout/app-shell-navigation";
@@ -1729,13 +1728,6 @@ export function SongEditorWorkspace({
               onRemoveNote={handleRemoveMelodyNote}
             />
           </PanelShell>
-
-          <AudioPreviewPanel
-            waveform={transportState.waveform}
-            masterLevel={transportState.masterLevel}
-            onWaveformChange={transportActions.setWaveform}
-            onMasterLevelChange={transportActions.setMasterLevel}
-          />
         </div>
 
         <aside className="space-y-6 2xl:sticky 2xl:top-6 2xl:max-h-[calc(100vh-3rem)] 2xl:overflow-y-auto">
