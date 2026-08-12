@@ -13,6 +13,7 @@ import {
   AppShellNavigationContext,
   type AppShellNavigationGuard,
 } from "@/components/layout/app-shell-navigation";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useAuth } from "@/features/auth/providers/auth-provider";
 import { cn } from "@/lib/cn";
 
@@ -146,6 +147,13 @@ export function AppShell({ children }: AppShellProps) {
   const { logout, user } = useAuth();
   const [navigationGuard, setNavigationGuard] =
     useState<AppShellNavigationGuard | null>(null);
+  // Set when a guarded navigation is intercepted: the dialog confirms before
+  // running `proceed`. Links preventDefault on the false return, so the
+  // deferred action re-navigates via the router instead.
+  const [pendingLeave, setPendingLeave] = useState<{
+    message: string;
+    proceed: () => void;
+  } | null>(null);
 
   // Keyed off the account, not the deployment: a demo build still lets people
   // sign in normally, and a registered account should see its own address.
@@ -155,22 +163,30 @@ export function AppShell({ children }: AppShellProps) {
   const logoutLabel = isDemoUser ? "Exit demo" : "Logout";
 
   function confirmNavigation(href: string) {
-    if (!navigationGuard) {
+    if (!navigationGuard || normalizePath(href) === normalizePath(pathname)) {
       return true;
     }
 
-    return normalizePath(href) === normalizePath(pathname)
-      ? true
-      : window.confirm(navigationGuard.message);
+    setPendingLeave({
+      message: navigationGuard.message,
+      proceed: () => router.push(href),
+    });
+
+    return false;
   }
 
   function handleLogout() {
-    if (!confirmNavigation("/login")) {
+    const leave = () => {
+      logout();
+      router.replace("/login");
+    };
+
+    if (navigationGuard) {
+      setPendingLeave({ message: navigationGuard.message, proceed: leave });
       return;
     }
 
-    logout();
-    router.replace("/login");
+    leave();
   }
 
   useLayoutEffect(() => {
@@ -192,6 +208,20 @@ export function AppShell({ children }: AppShellProps) {
         setNavigationGuard,
       }}
     >
+      <ConfirmDialog
+        open={pendingLeave !== null}
+        destructive
+        title="Discard unsaved changes?"
+        message={pendingLeave?.message ?? ""}
+        confirmLabel="Leave"
+        cancelLabel="Stay"
+        onConfirm={() => {
+          pendingLeave?.proceed();
+          setPendingLeave(null);
+        }}
+        onCancel={() => setPendingLeave(null)}
+      />
+
       <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.16),_transparent_30%)] dark:bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.14),_transparent_28%)]" />
         <div className="absolute left-[-10rem] top-16 h-72 w-72 rounded-full bg-highlight/55 blur-3xl" />
