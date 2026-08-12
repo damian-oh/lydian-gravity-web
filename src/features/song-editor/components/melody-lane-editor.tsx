@@ -952,9 +952,12 @@ export function MelodyLaneEditor({
                   max={7}
                   value={Math.floor(selectedNote.pitch / 12) - 1}
                   onChange={(event) => {
-                    const nextOctave = Number(event.currentTarget.value);
+                    const raw = event.currentTarget.value;
+                    const nextOctave = Number(raw);
 
-                    if (!Number.isFinite(nextOctave)) {
+                    // Number("") is 0, not NaN: a field mid-retype must not
+                    // commit and destroy the note's value.
+                    if (raw.trim() === "" || !Number.isFinite(nextOctave)) {
                       return;
                     }
 
@@ -985,9 +988,10 @@ export function MelodyLaneEditor({
                   step={0.25}
                   value={selectedNote.startBeat + 1}
                   onChange={(event) => {
-                    const nextStartBeat = Number(event.currentTarget.value) - 1;
+                    const raw = event.currentTarget.value;
+                    const nextStartBeat = Number(raw) - 1;
 
-                    if (!Number.isFinite(nextStartBeat)) {
+                    if (raw.trim() === "" || !Number.isFinite(nextStartBeat)) {
                       return;
                     }
 
@@ -1012,9 +1016,10 @@ export function MelodyLaneEditor({
                   step={0.25}
                   value={selectedNote.durationBeats}
                   onChange={(event) => {
-                    const nextDuration = Number(event.currentTarget.value);
+                    const raw = event.currentTarget.value;
+                    const nextDuration = Number(raw);
 
-                    if (!Number.isFinite(nextDuration)) {
+                    if (raw.trim() === "" || !Number.isFinite(nextDuration)) {
                       return;
                     }
 

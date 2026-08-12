@@ -221,7 +221,14 @@ export function SongSetupForm() {
               max={300}
               value={draft.tempoBpm}
               onChange={(event) => {
-                const nextTempoBpm = Number(event.currentTarget.value) || 20;
+                const raw = event.currentTarget.value;
+                const nextTempoBpm = Number(raw);
+
+                // Number("") is 0: a cleared field mid-retype must not
+                // collapse the tempo to the fallback.
+                if (raw.trim() === "" || !Number.isFinite(nextTempoBpm)) {
+                  return;
+                }
 
                 setDraft((current) => ({
                   ...current,
