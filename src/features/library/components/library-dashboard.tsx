@@ -3,9 +3,14 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PanelShell } from "@/components/ui/panel-shell";
 import { useAuth } from "@/features/auth/providers/auth-provider";
-import { listSongs } from "@/features/song-editor/lib/song-api";
+import {
+  deleteSong,
+  listSongs,
+  updateSongTitle,
+} from "@/features/song-editor/lib/song-api";
 import type { SongSummaryModel } from "@/features/song-editor/lib/song-model";
 
 function formatModeLabel(mode: string) {
@@ -28,6 +33,15 @@ export function LibraryDashboard() {
     "loading",
   );
   const [error, setError] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [renamePending, setRenamePending] = useState(false);
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<SongSummaryModel | null>(
+    null,
+  );
+  const [deletePending, setDeletePending] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,8 +87,104 @@ export function LibraryDashboard() {
     };
   }, [token]);
 
+  function beginRename(song: SongSummaryModel) {
+    setRenamingId(song.id);
+    setDraftTitle(song.title);
+    setRenameError(null);
+    setActionError(null);
+  }
+
+  function cancelRename() {
+    setRenamingId(null);
+    setDraftTitle("");
+    setRenameError(null);
+  }
+
+  async function commitRename(song: SongSummaryModel) {
+    const nextTitle = draftTitle.trim();
+
+    if (!token || nextTitle === "" || nextTitle === song.title) {
+      cancelRename();
+      return;
+    }
+
+    setRenamePending(true);
+    setRenameError(null);
+
+    try {
+      const response = await updateSongTitle(token, song.id, nextTitle);
+
+      // Merge instead of remapping: the PATCH response has no section_count.
+      setSongs((currentSongs) =>
+        currentSongs.map((currentSong) =>
+          currentSong.id === song.id
+            ? {
+                ...currentSong,
+                title: response.title,
+                updatedAt: response.updated_at ?? currentSong.updatedAt,
+              }
+            : currentSong,
+        ),
+      );
+      cancelRename();
+    } catch (renameFailure) {
+      setRenameError(
+        renameFailure instanceof Error
+          ? renameFailure.message
+          : "Unable to rename the sketch.",
+      );
+    } finally {
+      setRenamePending(false);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!token || !pendingDelete) {
+      setPendingDelete(null);
+      return;
+    }
+
+    const target = pendingDelete;
+    setDeletePending(true);
+    setActionError(null);
+
+    try {
+      await deleteSong(token, target.id);
+      setSongs((currentSongs) =>
+        currentSongs.filter((currentSong) => currentSong.id !== target.id),
+      );
+    } catch (deleteFailure) {
+      setActionError(
+        deleteFailure instanceof Error
+          ? deleteFailure.message
+          : "Unable to delete the sketch.",
+      );
+    } finally {
+      setDeletePending(false);
+      setPendingDelete(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        destructive
+        title={pendingDelete ? `Delete "${pendingDelete.title}"?` : "Delete?"}
+        message="This permanently removes the sketch, its sections, chords, and melody notes."
+        confirmLabel={deletePending ? "Deleting..." : "Delete"}
+        onConfirm={() => {
+          if (!deletePending) {
+            void confirmDelete();
+          }
+        }}
+        onCancel={() => {
+          if (!deletePending) {
+            setPendingDelete(null);
+          }
+        }}
+      />
+
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-accent">
@@ -110,6 +220,15 @@ export function LibraryDashboard() {
         description="Saved sketches are loaded from the FastAPI SQLite-backed library."
         bodyClassName="space-y-6"
       >
+        {actionError ? (
+          <div
+            role="alert"
+            className="rounded-[1.3rem] border border-rose-500/25 bg-rose-500/10 p-5 text-sm leading-6 text-rose-900 dark:text-rose-100"
+          >
+            {actionError}
+          </div>
+        ) : null}
+
         {status === "loading" ? (
           <div className="rounded-[1.3rem] border border-highlight/70 bg-background/55 p-5 text-sm font-semibold text-muted">
             Loading saved sketches...
@@ -148,42 +267,129 @@ export function LibraryDashboard() {
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {songs.map((song) => (
-              <Link
-                key={song.id}
-                href={`/songs/${song.id}`}
-                scroll={false}
-                className="rounded-[1.35rem] border border-highlight/80 bg-background/45 p-5 transition hover:border-accent/30 hover:bg-background/70 focus:outline-none focus:ring-4 focus:ring-accent/15"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-lg font-semibold tracking-tight text-foreground">
-                      {song.title}
-                    </p>
-                    <p className="mt-2 text-sm text-muted">
-                      {song.masterTonalCenter}{" "}
-                      {formatModeLabel(song.masterMode)}
-                    </p>
+            {songs.map((song) => {
+              const renaming = renamingId === song.id;
+
+              return (
+                <div
+                  key={song.id}
+                  className="flex flex-col rounded-[1.35rem] border border-highlight/80 bg-background/45 p-5 transition hover:border-accent/30 hover:bg-background/70"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    {renaming ? (
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <input
+                          type="text"
+                          value={draftTitle}
+                          autoFocus
+                          disabled={renamePending}
+                          maxLength={200}
+                          aria-label="Sketch title"
+                          onChange={(event) =>
+                            setDraftTitle(event.target.value)
+                          }
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              event.preventDefault();
+                              void commitRename(song);
+                            } else if (event.key === "Escape") {
+                              event.preventDefault();
+                              cancelRename();
+                            }
+                          }}
+                          className="w-full rounded-[0.95rem] border border-highlight/80 bg-background/55 px-3 py-2 text-base font-semibold text-foreground focus:border-accent/40 focus:outline-none focus:ring-4 focus:ring-accent/15 disabled:opacity-60"
+                        />
+                        {renameError ? (
+                          <p role="alert" className="text-sm text-rose-500">
+                            {renameError}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <Link
+                        href={`/songs/${song.id}`}
+                        scroll={false}
+                        className="min-w-0 rounded-[0.95rem] focus:outline-none focus:ring-4 focus:ring-accent/15"
+                      >
+                        <p className="truncate text-lg font-semibold tracking-tight text-foreground">
+                          {song.title}
+                        </p>
+                        <p className="mt-2 text-sm text-muted">
+                          {song.masterTonalCenter}{" "}
+                          {formatModeLabel(song.masterMode)}
+                        </p>
+                      </Link>
+                    )}
+                    <span className="rounded-full border border-highlight/80 bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-foreground/65">
+                      {song.sectionCount} sections
+                    </span>
                   </div>
-                  <span className="rounded-full border border-highlight/80 bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-foreground/65">
-                    {song.sectionCount} sections
-                  </span>
-                </div>
 
-                <div className="mt-5 flex flex-wrap gap-2">
-                  <span className="rounded-full border border-highlight/80 bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-foreground/65">
-                    {song.tempoBpm} BPM
-                  </span>
-                  <span className="rounded-full border border-highlight/80 bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-foreground/65">
-                    {song.timeSignature}
-                  </span>
-                </div>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <span className="rounded-full border border-highlight/80 bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-foreground/65">
+                      {song.tempoBpm} BPM
+                    </span>
+                    <span className="rounded-full border border-highlight/80 bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-foreground/65">
+                      {song.timeSignature}
+                    </span>
+                  </div>
 
-                <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-foreground/45">
-                  Updated {formatDate(song.updatedAt)}
-                </p>
-              </Link>
-            ))}
+                  <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-foreground/45">
+                    Updated {formatDate(song.updatedAt)}
+                  </p>
+
+                  <div className="mt-5 flex flex-wrap gap-2 border-t border-highlight/60 pt-4">
+                    {renaming ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={renamePending}
+                          onClick={() => void commitRename(song)}
+                          className="rounded-full bg-accent px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-950 transition hover:brightness-105 focus:outline-none focus:ring-4 focus:ring-accent/25 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {renamePending ? "Saving..." : "Save"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={renamePending}
+                          onClick={cancelRename}
+                          className="rounded-full border border-highlight/80 bg-surface px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-foreground/65 transition hover:text-foreground focus:outline-none focus:ring-4 focus:ring-accent/20 disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Link
+                          href={`/songs/${song.id}`}
+                          scroll={false}
+                          className="rounded-full border border-accent/35 bg-accent-soft px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-foreground transition hover:brightness-105 focus:outline-none focus:ring-4 focus:ring-accent/25"
+                        >
+                          Open
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => beginRename(song)}
+                          className="rounded-full border border-highlight/80 bg-surface px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-foreground/65 transition hover:border-accent/30 hover:text-foreground focus:outline-none focus:ring-4 focus:ring-accent/20"
+                        >
+                          Rename
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActionError(null);
+                            setPendingDelete(song);
+                          }}
+                          className="rounded-full border border-rose-500/25 bg-rose-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-rose-950 transition hover:brightness-95 focus:outline-none focus:ring-4 focus:ring-rose-500/20 dark:text-rose-100"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </PanelShell>

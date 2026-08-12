@@ -217,6 +217,31 @@ export async function createSong(token: string, payload: SongCreatePayload) {
   return mapSong(response);
 }
 
+// Returns the raw summary fields (SongSketchRead has no section_count), so
+// callers should merge title/updated_at into an existing summary rather than
+// remapping the whole response.
+export async function updateSongTitle(
+  token: string,
+  songId: string,
+  title: string,
+) {
+  return apiFetch<ApiSongSummary>(`/songs/${songId}`, {
+    method: "PATCH",
+    token,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ title }),
+  });
+}
+
+export async function deleteSong(token: string, songId: string) {
+  await apiFetch<null>(`/songs/${songId}`, {
+    method: "DELETE",
+    token,
+  });
+}
+
 export async function getSong(token: string, songId: string) {
   const response = await apiFetch<ApiSong>(`/songs/${songId}`, {
     method: "GET",
