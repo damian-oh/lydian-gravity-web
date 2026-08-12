@@ -117,11 +117,9 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
         return { ok: true } as const;
       } catch (error) {
-        clearStoredAuthToken();
-        setToken(null);
-        setUser(null);
-        setStatus("anonymous");
-
+        // A failed attempt must not tear down a session that already exists
+        // (e.g. a signed-in user retyping a password on /login). Clearing
+        // happens only through logout or the 401 handler.
         return {
           ok: false,
           message: formatAuthError(error),
