@@ -179,6 +179,9 @@ export function useSectionTransport({
   const currentBeatRef = useRef(0);
   const audioContextRef = useRef<AudioContext | null>(null);
   const triggeredEventKeysRef = useRef<Set<string>>(new Set());
+  const activeVoicesRef = useRef<
+    Set<{ oscillator: OscillatorNode; gain: GainNode }>
+  >(new Set());
 
   const beatsPerBar = useMemo(
     () => getBeatsPerBar(timeSignature),
@@ -196,13 +199,36 @@ export function useSectionTransport({
     ? clampBeat(currentBeat, safeTotalBeats)
     : 0;
 
+  const silenceAllVoices = useCallback(() => {
+    const audioContext = audioContextRef.current;
+
+    if (!audioContext) {
+      return;
+    }
+
+    const now = audioContext.currentTime;
+
+    activeVoicesRef.current.forEach(({ oscillator, gain }) => {
+      try {
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setValueAtTime(Math.max(0.0001, gain.gain.value), now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
+        oscillator.stop(now + 0.05);
+      } catch {
+        // The oscillator already ended; nothing left to silence.
+      }
+    });
+    activeVoicesRef.current.clear();
+  }, []);
+
   const stop = useCallback(() => {
     setBoundScopeKey(scopeKey);
     setStatus("stopped");
     setCurrentBeat(0);
     currentBeatRef.current = 0;
     triggeredEventKeysRef.current.clear();
-  }, [scopeKey]);
+    silenceAllVoices();
+  }, [scopeKey, silenceAllVoices]);
 
   const play = useCallback(() => {
     const baseCurrentBeat = isCurrentScopeBound
@@ -220,7 +246,8 @@ export function useSectionTransport({
   const pause = useCallback(() => {
     setBoundScopeKey(scopeKey);
     setStatus("paused");
-  }, [scopeKey]);
+    silenceAllVoices();
+  }, [scopeKey, silenceAllVoices]);
 
   const seek = useCallback(
     (beat: number) => {
@@ -276,7 +303,11 @@ export function useSectionTransport({
         return;
       }
 
-      const audioContext = audioContextRef.current ?? new AudioContextCtor();
+      const existingContext = audioContextRef.current;
+      const audioContext =
+        existingContext && existingContext.state !== "closed"
+          ? existingContext
+          : new AudioContextCtor();
       audioContextRef.current = audioContext;
 
       if (audioContext.state === "suspended") {
@@ -306,6 +337,12 @@ export function useSectionTransport({
         gainNode.connect(audioContext.destination);
         oscillator.start(startTime);
         oscillator.stop(startTime + safeDurationSeconds + 0.03);
+
+        const voice = { oscillator, gain: gainNode };
+        activeVoicesRef.current.add(voice);
+        oscillator.onended = () => {
+          activeVoicesRef.current.delete(voice);
+        };
       });
     },
     [masterLevel, waveform],
@@ -463,6 +500,18 @@ export function useSectionTransport({
     tempoBpm,
     triggerPlaybackEvents,
   ]);
+
+  useEffect(() => {
+    return () => {
+      silenceAllVoices();
+      const audioContext = audioContextRef.current;
+      audioContextRef.current = null;
+
+      if (audioContext && audioContext.state !== "closed") {
+        void audioContext.close();
+      }
+    };
+  }, [silenceAllVoices]);
 
   const state = useMemo<TransportState>(
     () => ({
