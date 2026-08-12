@@ -30,12 +30,17 @@ export function LibraryDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) {
-      return;
-    }
-
     let cancelled = false;
     const timeoutId = window.setTimeout(() => {
+      if (!token) {
+        // Without a token the fetch never fires; surface that instead of
+        // sitting on "loading" forever.
+        setStatus("error");
+        setError("Your session has ended. Sign in again to see your library.");
+
+        return;
+      }
+
       setStatus("loading");
       setError(null);
 
