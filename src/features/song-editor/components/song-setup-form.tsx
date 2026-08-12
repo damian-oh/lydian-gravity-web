@@ -147,7 +147,6 @@ export function SongSetupForm() {
       <PanelShell
         eyebrow="Song Sketch Setup"
         title="Set the tonal identity first"
-        description="Set the title, tonal center, mode, tempo, and notes before moving into the editor."
         bodyClassName="space-y-5"
       >
         <div className="grid gap-5 sm:grid-cols-2">
@@ -274,7 +273,7 @@ export function SongSetupForm() {
                 notes: nextNotes,
               }));
             }}
-            placeholder="Capture lyrical ideas, arrangement notes, or harmonic targets."
+            placeholder="Lyrics, notes, or harmonic targets"
           />
         </div>
 

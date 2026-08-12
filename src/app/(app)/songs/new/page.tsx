@@ -20,8 +20,7 @@ export default function NewSongPage() {
             New Sketch
           </h1>
           <p className="max-w-2xl text-base leading-7 text-muted sm:text-lg">
-            Shape the song identity here, then move into the editor to refine
-            the arrangement.
+            Set the song&apos;s identity, then open the editor.
           </p>
         </div>
       </header>

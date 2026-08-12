@@ -1069,8 +1069,8 @@ export function MelodyLaneEditor({
         ) : (
           <div className="rounded-[1.2rem] border border-dashed border-highlight bg-background/35 p-4 text-sm leading-6 text-muted">
             {interactionMode === "draw"
-              ? "Drag across the grid to place a note. Notes snap to quarter beats and automatically trim overlaps."
-              : "Select a note to move, resize, edit exact values, or remove it."}
+              ? "Drag to draw a note. Notes snap to quarter beats."
+              : "Select a note to move, resize, or remove it."}
           </div>
         )}
       </div>

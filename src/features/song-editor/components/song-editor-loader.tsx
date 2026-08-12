@@ -70,7 +70,7 @@ export function SongEditorLoader({ songId }: Readonly<{ songId: string }>) {
       <PanelShell
         eyebrow="Loading Song"
         title="Opening editor"
-        description="Fetching the saved arrangement from the API."
+        description="Loading your sketch…"
         bodyClassName="text-sm font-semibold text-muted"
       >
         Loading...
@@ -83,7 +83,7 @@ export function SongEditorLoader({ songId }: Readonly<{ songId: string }>) {
       <PanelShell
         eyebrow="Song Error"
         title="Unable to open this sketch"
-        description={error ?? "The requested sketch could not be loaded."}
+        description={error ?? "Head back to the library and try again."}
         bodyClassName="space-y-4"
       >
         <Link

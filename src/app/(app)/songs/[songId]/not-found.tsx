@@ -8,7 +8,6 @@ export default function SongNotFound() {
       <PanelShell
         eyebrow="Unknown Song"
         title="Song not found"
-        description="Choose an arrangement from the library or start a new sketch."
         className="w-full max-w-xl"
         bodyClassName="space-y-4"
       >

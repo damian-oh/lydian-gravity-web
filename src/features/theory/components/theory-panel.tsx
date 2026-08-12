@@ -125,7 +125,6 @@ export function TheoryPanel({
     <PanelShell
       eyebrow="Theory Panel"
       title={`${sectionLabel} harmonic cues`}
-      description="Review the selected chord plus chord and melody suggestions for the active section."
       bodyClassName="space-y-5"
     >
       <div className="rounded-[1.35rem] border border-highlight/70 bg-background/55 p-4">
@@ -163,8 +162,7 @@ export function TheoryPanel({
           </div>
         ) : (
           <p className="mt-3 text-sm leading-6 text-muted">
-            Select a chord in the harmony lane to see its notes and source
-            context.
+            Select a chord to see its notes and context.
           </p>
         )}
       </div>
@@ -222,8 +220,7 @@ export function TheoryPanel({
         ) : (
           <div className="rounded-[1.3rem] border border-highlight/70 bg-background/55 p-4">
             <p className="text-sm leading-6 text-muted">
-              Add more harmonic context to surface next-move suggestions for
-              this section.
+              Add chords to surface suggestions.
             </p>
           </div>
         )}
@@ -242,7 +239,7 @@ export function TheoryPanel({
         ) : (
           <div className="rounded-[1.2rem] border border-highlight/70 bg-background/55 p-4">
             <p className="text-sm leading-6 text-muted">
-              Add melodic context to surface suggestions for this section.
+              Add melody notes to surface suggestions.
             </p>
           </div>
         )}

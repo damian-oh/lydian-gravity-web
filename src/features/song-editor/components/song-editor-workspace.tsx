@@ -527,11 +527,6 @@ function ChordSlotCard({
             Slot
           </span>
         </div>
-
-        <p className="mt-4 text-sm leading-6 text-muted">
-          Choose a diatonic, secondary-dominant, or modal-interchange color for
-          this bar.
-        </p>
       </button>
     );
   }
@@ -1227,16 +1222,12 @@ export function SongEditorWorkspace({
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-accent">
-            Guided Melody & Chord Sketch Editor
+            Sketch Editor
           </p>
           <div className="space-y-2">
             <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
               {song.title}
             </h1>
-            <p className="max-w-3xl text-base leading-7 text-muted sm:text-lg">
-              Shape sections, chord placement, melody notes, modal-interchange
-              cues, and preview controls in one workspace.
-            </p>
           </div>
         </div>
 
@@ -1300,7 +1291,7 @@ export function SongEditorWorkspace({
       <PanelShell
         eyebrow="Structure Builder"
         title="Define the section flow"
-        description="Set the sequence and bar count for each section before refining the harmony and melody lanes."
+        description="Set the order and bar count of each section."
         bodyClassName="space-y-4"
       >
         <div className="-mx-1 overflow-x-auto px-1 pb-2">
@@ -1472,7 +1463,6 @@ export function SongEditorWorkspace({
       <PanelShell
         eyebrow="Section Map"
         title="Song structure"
-        description="Move between sections and review the arrangement at a glance."
         bodyClassName="space-y-5"
       >
         <div className="flex gap-3 overflow-x-auto pb-2">
@@ -1555,7 +1545,6 @@ export function SongEditorWorkspace({
           <PanelShell
             eyebrow="Harmony Lane"
             title="Chord progression"
-            description="Follow the section timeline left to right and compare beat span, note spellings, and source mode."
             className={cn(
               mobileView === "progression" ? "block" : "hidden",
               "lg:block",
@@ -1707,7 +1696,6 @@ export function SongEditorWorkspace({
           <PanelShell
             eyebrow="Melody Lane"
             title="Melodic note sketch"
-            description="Draw, move, resize, and remove quarter-beat notes while reading their gravity against the active harmony."
             className={cn(
               mobileView === "melody" ? "block" : "hidden",
               "lg:block",

@@ -201,8 +201,7 @@ export function LibraryDashboard() {
               Library
             </h1>
             <p className="max-w-2xl text-base leading-7 text-muted sm:text-lg">
-              Open saved sketches, review arrangement scope, and continue a
-              modal writing session.
+              Open a saved sketch and pick up where you left off.
             </p>
           </div>
         </div>
@@ -223,7 +222,6 @@ export function LibraryDashboard() {
             ? `${songs.length} saved sketch${songs.length === 1 ? "" : "es"}`
             : "No sketches saved yet"
         }
-        description="Saved sketches are loaded from the FastAPI SQLite-backed library."
         actions={
           status === "ready" && songs.length > 0 ? (
             <input

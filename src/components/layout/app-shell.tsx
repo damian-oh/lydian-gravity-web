@@ -25,12 +25,12 @@ const navigationItems = [
   {
     href: "/library",
     label: "Library",
-    description: "Song sketches and arrangements",
+    description: "Saved sketches",
   },
   {
     href: "/songs/new",
     label: "New Sketch",
-    description: "Title, mode, tempo, and notes",
+    description: "Start a new song",
   },
 ];
 
@@ -254,8 +254,7 @@ export function AppShell({ children }: AppShellProps) {
                       Songwriting Workspace
                     </p>
                     <p className="text-sm leading-6 text-muted">
-                      Sketch sections, shape harmonic motion, and track melody
-                      ideas across the library, setup, and editor views.
+                      Sketch sections, place chords, and draw melodies.
                     </p>
                   </div>
                 </div>

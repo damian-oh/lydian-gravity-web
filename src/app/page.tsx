@@ -7,19 +7,19 @@ const featureCards = [
     title: "Harmony Lane",
     eyebrow: "Progression",
     description:
-      "Place a chord per bar from a theory-aware palette: diatonic colors, secondary dominants, and modal-interchange borrowings, spelled out against your tonal center.",
+      "A theory-aware chord palette per bar: diatonic colors, secondary dominants, and modal borrowings.",
   },
   {
     title: "Melody Gravity",
     eyebrow: "Piano Roll",
     description:
-      "Draw, move, and resize notes on a beat-snapped grid while every note is graded by its gravitational pull against the active chord.",
+      "Draw notes on a beat-snapped grid, each graded by its pull against the active chord.",
   },
   {
     title: "Hear It Instantly",
     eyebrow: "Playback",
     description:
-      "A Web Audio transport with loop, metronome, and per-section playback, plus theory prompts that suggest the next harmonic move.",
+      "Loop, metronome, and per-section playback — with prompts for the next harmonic move.",
   },
 ] as const;
 
@@ -160,11 +160,6 @@ export default function Home() {
               A songwriting workspace built on George Russell&apos;s Lydian
               Chromatic Concept.
             </p>
-            <p className="max-w-xl text-base leading-7 text-foreground/65">
-              Sketch song sections, place theory-aware chords bar by bar, draw
-              melodies that are graded against the harmony, and audition every
-              idea with an in-browser transport.
-            </p>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
               {isDemoMode ? (
@@ -192,8 +187,7 @@ export default function Home() {
 
             {isDemoMode ? (
               <p className="text-sm text-muted">
-                No sign-up required — you get a private sandbox with a starter
-                song, ready to explore.
+                No sign-up required — a private sandbox with a starter song.
               </p>
             ) : null}
           </div>
