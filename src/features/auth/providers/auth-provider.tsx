@@ -19,8 +19,10 @@ import {
   type AuthUser,
 } from "@/features/auth/lib/auth-api";
 import {
+  clearSignedOutMark,
   clearStoredAuthToken,
   getStoredAuthToken,
+  markSignedOut,
   storeAuthToken,
 } from "@/features/auth/lib/auth-token";
 import { setUnauthorizedHandler } from "@/lib/api/api-client";
@@ -53,6 +55,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   const logout = useCallback(() => {
     clearStoredAuthToken();
+    markSignedOut();
     setToken(null);
     setUser(null);
     setStatus("anonymous");
@@ -75,6 +78,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       const authToken = await requestDemoSession();
 
       storeAuthToken(authToken.access_token);
+      clearSignedOutMark();
       await loadCurrentUser(authToken.access_token);
 
       return { ok: true } as const;
@@ -122,6 +126,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         const authToken = await requestAccessToken(credentials);
 
         storeAuthToken(authToken.access_token);
+        clearSignedOutMark();
         await loadCurrentUser(authToken.access_token);
 
         return { ok: true } as const;

@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, type ReactNode } from "react";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { hasSignedOutMark } from "@/features/auth/lib/auth-token";
 import { isDemoMode } from "@/features/auth/lib/demo-config";
 import { useAuth } from "@/features/auth/providers/auth-provider";
 
@@ -16,13 +17,6 @@ export function AuthenticatedAppShell({
   const { startDemoSession, status } = useAuth();
   const hasRequestedDemo = useRef(false);
   const demoRequestFailed = useRef(false);
-  const hasHadSession = useRef(false);
-
-  useEffect(() => {
-    if (status === "authenticated") {
-      hasHadSession.current = true;
-    }
-  }, [status]);
 
   useEffect(() => {
     if (status !== "anonymous") {
@@ -32,10 +26,12 @@ export function AuthenticatedAppShell({
     // Demo mode provisions a session where one is actually required, rather
     // than on every page under the root layout.
     //
-    // Only for a visitor who arrived without a session, though: reaching
-    // "anonymous" after having had one means they just signed out, and
-    // handing them a fresh demo account would make that button do nothing.
-    if (isDemoMode && !hasHadSession.current) {
+    // Only for a visitor who never signed out in this tab, though: the
+    // sessionStorage mark set by logout means they explicitly ended a
+    // session, and handing them a fresh demo account would make that button
+    // do nothing. The mark (rather than component state) matters because
+    // this shell unmounts on logout and remounts on Back navigation.
+    if (isDemoMode && !hasSignedOutMark()) {
       if (!hasRequestedDemo.current) {
         hasRequestedDemo.current = true;
         void startDemoSession().then((result) => {

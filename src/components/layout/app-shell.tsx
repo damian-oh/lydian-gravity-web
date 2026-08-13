@@ -21,6 +21,11 @@ type AppShellProps = Readonly<{
   children: ReactNode;
 }>;
 
+// The shell only renders for authenticated users, so the logo stays inside
+// the app instead of dropping them on the public landing page, which reads
+// as an accidental sign-out.
+const logoHref = "/library";
+
 const navigationItems = [
   {
     href: "/library",
@@ -237,9 +242,9 @@ export function AppShell({ children }: AppShellProps) {
               <div className="flex flex-wrap items-center justify-between gap-6">
                 <div className="max-w-3xl space-y-3">
                   <Link
-                    href="/"
+                    href={logoHref}
                     onClick={(event) => {
-                      if (!confirmNavigation("/")) {
+                      if (!confirmNavigation(logoHref)) {
                         event.preventDefault();
                       }
                     }}
@@ -294,9 +299,9 @@ export function AppShell({ children }: AppShellProps) {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-1">
                   <Link
-                    href="/"
+                    href={logoHref}
                     onClick={(event) => {
-                      if (!confirmNavigation("/")) {
+                      if (!confirmNavigation(logoHref)) {
                         event.preventDefault();
                       }
                     }}

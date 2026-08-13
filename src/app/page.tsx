@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { DemoCtaLink } from "@/features/auth/components/demo-cta-link";
+import { LandingAuthNav } from "@/features/auth/components/landing-auth-nav";
 import { isDemoMode } from "@/features/auth/lib/demo-config";
 
 const featureCards = [
@@ -132,20 +134,7 @@ export default function Home() {
             LYDIAN GRAVITY
           </Link>
 
-          <nav className="flex items-center gap-3 text-sm font-semibold">
-            <Link
-              href="/login"
-              className="rounded-full px-4 py-2 text-foreground/70 transition hover:bg-highlight/70 hover:text-foreground focus:outline-none focus:ring-4 focus:ring-highlight/80"
-            >
-              Login
-            </Link>
-            <Link
-              href="/register"
-              className="rounded-full bg-accent px-4 py-2 uppercase tracking-[0.16em] text-slate-950 transition hover:brightness-105 focus:outline-none focus:ring-4 focus:ring-accent/25"
-            >
-              Register
-            </Link>
-          </nav>
+          <LandingAuthNav />
         </header>
 
         <section className="grid flex-1 items-center gap-12 py-16 sm:py-20 lg:grid-cols-[minmax(0,1fr)_24rem]">
@@ -163,12 +152,9 @@ export default function Home() {
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
               {isDemoMode ? (
-                <Link
-                  href="/library"
-                  className="rounded-full bg-accent px-6 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-950 transition hover:brightness-105 focus:outline-none focus:ring-4 focus:ring-accent/25"
-                >
+                <DemoCtaLink className="rounded-full bg-accent px-6 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-950 transition hover:brightness-105 focus:outline-none focus:ring-4 focus:ring-accent/25">
                   Try the live demo
-                </Link>
+                </DemoCtaLink>
               ) : (
                 <Link
                   href="/register"
