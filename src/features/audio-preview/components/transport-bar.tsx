@@ -26,6 +26,45 @@ type TransportBarProps = Readonly<{
   >;
 }>;
 
+function PlayIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M8 5.5v13a1 1 0 0 0 1.53.85l10.5-6.5a1 1 0 0 0 0-1.7l-10.5-6.5A1 1 0 0 0 8 5.5Z" />
+    </svg>
+  );
+}
+
+function PauseIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M7 5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1H7Zm8 0a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2Z" />
+    </svg>
+  );
+}
+
+function StopIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <rect x="6" y="6" width="12" height="12" rx="1.5" />
+    </svg>
+  );
+}
+
 function formatStatusLabel(status: TransportState["status"]) {
   switch (status) {
     case "playing":
@@ -113,16 +152,22 @@ export function TransportBar({
               onClick={
                 transport.status === "playing" ? actions.pause : actions.play
               }
-              className="rounded-full border border-accent/35 bg-accent-soft px-4 py-2 text-sm font-semibold text-foreground transition hover:brightness-95 focus:outline-none focus:ring-4 focus:ring-accent/15"
+              aria-label={playButtonLabel}
+              className="rounded-full border border-accent/35 bg-accent-soft p-2.5 text-foreground transition hover:brightness-95 focus:outline-none focus:ring-4 focus:ring-accent/15"
             >
-              {playButtonLabel}
+              {transport.status === "playing" ? (
+                <PauseIcon className="h-4 w-4" />
+              ) : (
+                <PlayIcon className="h-4 w-4" />
+              )}
             </button>
             <button
               type="button"
               onClick={actions.stop}
-              className="rounded-full border border-highlight/80 bg-background/45 px-4 py-2 text-sm font-semibold text-foreground/72 transition hover:border-accent/30 hover:text-foreground focus:outline-none focus:ring-4 focus:ring-accent/15"
+              aria-label="Stop"
+              className="rounded-full border border-highlight/80 bg-background/45 p-2.5 text-foreground/72 transition hover:border-accent/30 hover:text-foreground focus:outline-none focus:ring-4 focus:ring-accent/15"
             >
-              Stop
+              <StopIcon className="h-4 w-4" />
             </button>
             <button
               type="button"
