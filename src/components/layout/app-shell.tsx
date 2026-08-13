@@ -250,7 +250,6 @@ export function AppShell({ children }: AppShellProps) {
                     }}
                     className="inline-flex w-fit items-center gap-3 rounded-full border border-highlight/80 bg-background/60 px-3 py-2 text-sm font-semibold tracking-[0.28em] text-foreground/72 transition hover:border-accent/30 hover:text-foreground focus:outline-none focus:ring-4 focus:ring-accent/20"
                   >
-                    <span className="h-2.5 w-2.5 rounded-full bg-accent" />
                     LYDIAN GRAVITY
                   </Link>
 
@@ -307,7 +306,6 @@ export function AppShell({ children }: AppShellProps) {
                     }}
                     className="inline-flex w-fit items-center gap-2 text-xs font-semibold tracking-[0.24em] text-foreground/55 transition hover:text-foreground focus:outline-none focus:underline"
                   >
-                    <span className="h-2 w-2 rounded-full bg-accent" />
                     LYDIAN GRAVITY
                   </Link>
                   <p className="text-sm text-muted">
