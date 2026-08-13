@@ -5,7 +5,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { PanelShell } from "@/components/ui/panel-shell";
 import { TransportBar } from "@/features/audio-preview/components/transport-bar";
-import { useSectionTransport } from "@/features/audio-preview/lib/use-section-transport";
+import {
+  useSectionTransport,
+  type PlaybackChord,
+} from "@/features/audio-preview/lib/use-section-transport";
 import { useAppShellNavigation } from "@/components/layout/app-shell-navigation";
 import { ChordPicker } from "@/features/song-editor/components/chord-picker";
 import { MelodyLaneEditor } from "@/features/song-editor/components/melody-lane-editor";
@@ -28,6 +31,7 @@ import {
 } from "@/features/song-editor/lib/song-model";
 import { TheoryPanel } from "@/features/theory/components/theory-panel";
 import { cn } from "@/lib/cn";
+import { voiceProgression } from "@/lib/music/chord-voicing";
 
 type SongEditorWorkspaceProps = Readonly<{
   song: SongSketchModel;
@@ -752,10 +756,15 @@ export function SongEditorWorkspace({
   // Identity-stable transport inputs: the playhead re-renders this component
   // every frame during playback, and a fresh chords array per render would
   // make the transport's playback effect tear down and re-arm each frame.
-  const playableChords = useMemo(
-    () => getPlayableChords(activeSection, song.timeSignature),
-    [activeSection, song.timeSignature],
-  );
+  const playableChords = useMemo<readonly PlaybackChord[]>(() => {
+    const chords = getPlayableChords(activeSection, song.timeSignature);
+    const voicings = voiceProgression(chords.map((chord) => chord.notes));
+
+    return chords.map((chord, index) => ({
+      ...chord,
+      voicing: voicings[index],
+    }));
+  }, [activeSection, song.timeSignature]);
   const { state: transportState, actions: transportActions } =
     useSectionTransport({
       scopeKey: transportScopeKey,

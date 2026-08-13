@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import type { ChordVoicing } from "@/lib/music/chord-voicing";
+
 export const playbackWaveforms = [
   "sine",
   "triangle",
@@ -47,6 +49,9 @@ export type PlaybackChord = Readonly<{
   notes: readonly string[];
   startBeat: number;
   durationBeats: number;
+  // Precomputed by the caller; chords without one fall back to a closed
+  // pitch-class stack at octave 3.
+  voicing?: ChordVoicing;
 }>;
 
 export type PlaybackMelodicNote = Readonly<{
@@ -364,9 +369,13 @@ export function useSectionTransport({
           return;
         }
 
-        const frequencies = chord.notes
-          .map((note) => noteNameToFrequency(note, 3))
-          .filter((frequency): frequency is number => frequency !== null);
+        const midiNotes = chord.voicing?.midiNotes;
+        const frequencies =
+          midiNotes && midiNotes.length > 0
+            ? midiNotes.map(midiToFrequency)
+            : chord.notes
+                .map((note) => noteNameToFrequency(note, 3))
+                .filter((frequency): frequency is number => frequency !== null);
 
         playToneFrequencies(
           frequencies,
