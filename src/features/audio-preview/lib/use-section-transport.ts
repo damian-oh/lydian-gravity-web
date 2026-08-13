@@ -159,6 +159,43 @@ function midiToFrequency(pitch: number) {
   return 440 * 2 ** ((pitch - 69) / 12);
 }
 
+type AudioGraph = Readonly<{
+  context: AudioContext;
+  chordFilter: BiquadFilterNode;
+  masterGain: GainNode;
+  compressor: DynamicsCompressorNode;
+}>;
+
+type ToneLayer = Readonly<{
+  type: OscillatorType;
+  freqRatio: number;
+  detuneCents: number;
+  gainRatio: number;
+}>;
+
+type ActiveVoice = Readonly<{
+  oscillators: readonly OscillatorNode[];
+  gain: GainNode;
+}>;
+
+// Chords: fundamental in the user's waveform, a quiet detuned copy for a
+// gentle chorus, and an octave sine for harmonic warmth.
+function getChordLayers(waveform: PlaybackWaveform): readonly ToneLayer[] {
+  return [
+    { type: waveform, freqRatio: 1, detuneCents: 0, gainRatio: 1 },
+    { type: waveform, freqRatio: 1, detuneCents: 4, gainRatio: 0.35 },
+    { type: "sine", freqRatio: 2, detuneCents: 0, gainRatio: 0.18 },
+  ];
+}
+
+// Melody stays lighter than the chord bed so the line remains articulate.
+function getMelodyLayers(waveform: PlaybackWaveform): readonly ToneLayer[] {
+  return [
+    { type: waveform, freqRatio: 1, detuneCents: 0, gainRatio: 1 },
+    { type: "sine", freqRatio: 2, detuneCents: 0, gainRatio: 0.12 },
+  ];
+}
+
 export function useSectionTransport({
   scopeKey,
   sectionId,
@@ -182,11 +219,10 @@ export function useSectionTransport({
   const animationFrameIdRef = useRef<number | null>(null);
   const lastFrameTimeRef = useRef<number | null>(null);
   const currentBeatRef = useRef(0);
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioGraphRef = useRef<AudioGraph | null>(null);
+  const masterLevelRef = useRef(0.75);
   const triggeredEventKeysRef = useRef<Set<string>>(new Set());
-  const activeVoicesRef = useRef<
-    Set<{ oscillator: OscillatorNode; gain: GainNode }>
-  >(new Set());
+  const activeVoicesRef = useRef<Set<ActiveVoice>>(new Set());
 
   const beatsPerBar = useMemo(
     () => getBeatsPerBar(timeSignature),
@@ -205,23 +241,31 @@ export function useSectionTransport({
     : 0;
 
   const silenceAllVoices = useCallback(() => {
-    const audioContext = audioContextRef.current;
+    const graph = audioGraphRef.current;
 
-    if (!audioContext) {
+    if (!graph) {
       return;
     }
 
-    const now = audioContext.currentTime;
+    const now = graph.context.currentTime;
 
-    activeVoicesRef.current.forEach(({ oscillator, gain }) => {
+    activeVoicesRef.current.forEach(({ oscillators, gain }) => {
       try {
         gain.gain.cancelScheduledValues(now);
         gain.gain.setValueAtTime(Math.max(0.0001, gain.gain.value), now);
         gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
-        oscillator.stop(now + 0.05);
       } catch {
-        // The oscillator already ended; nothing left to silence.
+        // The voice already ended; nothing left to silence.
       }
+
+      oscillators.forEach((oscillator) => {
+        try {
+          // Legal even for strum-scheduled oscillators that have not started.
+          oscillator.stop(now + 0.05);
+        } catch {
+          // The oscillator already ended.
+        }
+      });
     });
     activeVoicesRef.current.clear();
   }, []);
@@ -289,68 +333,242 @@ export function useSectionTransport({
     setMasterLevel(clampMasterLevel(nextLevel));
   }, []);
 
-  const playToneFrequencies = useCallback(
+  const ensureAudioGraph = useCallback((): AudioGraph | null => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    const existing = audioGraphRef.current;
+
+    if (existing && existing.context.state !== "closed") {
+      if (existing.context.state === "suspended") {
+        void existing.context.resume();
+      }
+
+      return existing;
+    }
+
+    const AudioContextCtor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+
+    if (!AudioContextCtor) {
+      return null;
+    }
+
+    // chords → low-pass → limiter ← melody/metronome; limiter → master gain
+    // → speakers. The master gain sits after the limiter so the level slider
+    // is true output volume, not compressor drive; the compressor is tuned
+    // as a peak-safety limiter that only engages on coincident peaks, so it
+    // neither pumps the mix nor adds audible makeup gain.
+    const context = new AudioContextCtor();
+    const compressor = context.createDynamicsCompressor();
+
+    compressor.threshold.value = -3;
+    compressor.knee.value = 6;
+    compressor.ratio.value = 12;
+    compressor.attack.value = 0.003;
+    compressor.release.value = 0.25;
+
+    const masterGain = context.createGain();
+
+    masterGain.gain.value = masterLevelRef.current;
+    compressor.connect(masterGain);
+    masterGain.connect(context.destination);
+
+    const chordFilter = context.createBiquadFilter();
+
+    chordFilter.type = "lowpass";
+    chordFilter.frequency.value = 2200;
+    chordFilter.Q.value = 0.5;
+    chordFilter.connect(compressor);
+
+    const graph: AudioGraph = { context, chordFilter, masterGain, compressor };
+
+    // A rebuild only happens when the browser closed the old context on its
+    // own; voices from that context are dead and their onended never fires.
+    activeVoicesRef.current.clear();
+    audioGraphRef.current = graph;
+
+    if (context.state === "suspended") {
+      void context.resume();
+    }
+
+    return graph;
+  }, []);
+
+  const playVoice = useCallback(
     (
-      frequencies: readonly number[],
-      durationSeconds: number,
-      gainMultiplier = 1,
+      graph: AudioGraph,
+      options: Readonly<{
+        frequency: number;
+        startTime: number;
+        durationSeconds: number;
+        peakGain: number;
+        destination: AudioNode;
+        layers: readonly ToneLayer[];
+        pianoDecay: boolean;
+      }>,
     ) => {
-      if (frequencies.length === 0 || typeof window === "undefined") {
-        return;
-      }
+      const { context } = graph;
+      const safeDurationSeconds = Math.max(0.08, options.durationSeconds);
+      const peak = Math.max(0.0001, options.peakGain);
+      const envelope = context.createGain();
 
-      const AudioContextCtor =
-        window.AudioContext ??
-        (window as unknown as { webkitAudioContext?: typeof AudioContext })
-          .webkitAudioContext;
+      // Start silent: a GainNode's intrinsic value is 1.0 until its first
+      // scheduled event, and strummed voices schedule that event in the
+      // future — silenceAllVoices must not find a full-gain envelope there.
+      envelope.gain.value = 0.0001;
+      envelope.connect(options.destination);
 
-      if (!AudioContextCtor) {
-        return;
-      }
-
-      const existingContext = audioContextRef.current;
-      const audioContext =
-        existingContext && existingContext.state !== "closed"
-          ? existingContext
-          : new AudioContextCtor();
-      audioContextRef.current = audioContext;
-
-      if (audioContext.state === "suspended") {
-        void audioContext.resume();
-      }
-
-      const startTime = audioContext.currentTime;
-      const safeDurationSeconds = Math.max(0.08, durationSeconds);
-
-      frequencies.forEach((frequency) => {
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-
-        oscillator.type = waveform;
-        oscillator.frequency.setValueAtTime(frequency, startTime);
-        gainNode.gain.setValueAtTime(0.0001, startTime);
-        gainNode.gain.exponentialRampToValueAtTime(
-          Math.max(0.0001, (masterLevel * gainMultiplier) / frequencies.length),
-          startTime + 0.018,
+      if (options.pianoDecay) {
+        // Soft attack, fast body decay, quieter tail — a rough piano shape
+        // from one linear and two exponential segments.
+        envelope.gain.setValueAtTime(0.0001, options.startTime);
+        envelope.gain.linearRampToValueAtTime(peak, options.startTime + 0.01);
+        envelope.gain.exponentialRampToValueAtTime(
+          peak * 0.3,
+          options.startTime + safeDurationSeconds * 0.5,
         );
-        gainNode.gain.exponentialRampToValueAtTime(
+        envelope.gain.exponentialRampToValueAtTime(
           0.0001,
-          startTime + safeDurationSeconds,
+          options.startTime + safeDurationSeconds,
+        );
+      } else {
+        envelope.gain.setValueAtTime(0.0001, options.startTime);
+        envelope.gain.exponentialRampToValueAtTime(
+          peak,
+          options.startTime + 0.018,
+        );
+        envelope.gain.exponentialRampToValueAtTime(
+          0.0001,
+          options.startTime + safeDurationSeconds,
+        );
+      }
+
+      const totalGainRatio = options.layers.reduce(
+        (sum, layer) => sum + layer.gainRatio,
+        0,
+      );
+      const oscillators = options.layers.map((layer) => {
+        const oscillator = context.createOscillator();
+        const layerGain = context.createGain();
+
+        oscillator.type = layer.type;
+        oscillator.frequency.setValueAtTime(
+          options.frequency * layer.freqRatio,
+          options.startTime,
         );
 
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        oscillator.start(startTime);
-        oscillator.stop(startTime + safeDurationSeconds + 0.03);
+        if (layer.detuneCents !== 0) {
+          oscillator.detune.setValueAtTime(
+            layer.detuneCents,
+            options.startTime,
+          );
+        }
 
-        const voice = { oscillator, gain: gainNode };
-        activeVoicesRef.current.add(voice);
-        oscillator.onended = () => {
-          activeVoicesRef.current.delete(voice);
-        };
+        layerGain.gain.value = layer.gainRatio / totalGainRatio;
+        oscillator.connect(layerGain);
+        layerGain.connect(envelope);
+        oscillator.start(options.startTime);
+        oscillator.stop(options.startTime + safeDurationSeconds + 0.03);
+
+        return oscillator;
+      });
+
+      const voice: ActiveVoice = { oscillators, gain: envelope };
+
+      activeVoicesRef.current.add(voice);
+      oscillators[0].onended = () => {
+        activeVoicesRef.current.delete(voice);
+      };
+    },
+    [],
+  );
+
+  const playChordFrequencies = useCallback(
+    (frequencies: readonly number[], durationSeconds: number) => {
+      if (frequencies.length === 0) {
+        return;
+      }
+
+      const graph = ensureAudioGraph();
+
+      if (!graph) {
+        return;
+      }
+
+      const layers = getChordLayers(waveform);
+      // Equal-power normalization: 1/N over-attenuates dense voicings. The
+      // 0.4 constant keeps the chord bed near the pre-voicing loudness.
+      const peakGain = 0.4 / Math.sqrt(frequencies.length);
+      const sortedFrequencies = [...frequencies].sort((a, b) => a - b);
+      // A low-to-high strum: 12 ms per voice is audible warmth, with the
+      // total spread capped at 50 ms so dense voicings don't lag the beat.
+      const strumStep = Math.min(
+        0.012,
+        0.05 / Math.max(1, sortedFrequencies.length - 1),
+      );
+      const chordStartTime = graph.context.currentTime;
+
+      sortedFrequencies.forEach((frequency, index) => {
+        playVoice(graph, {
+          frequency,
+          startTime: chordStartTime + index * strumStep,
+          durationSeconds,
+          peakGain,
+          destination: graph.chordFilter,
+          layers,
+          pianoDecay: true,
+        });
       });
     },
-    [masterLevel, waveform],
+    [ensureAudioGraph, playVoice, waveform],
+  );
+
+  const playMelodyFrequency = useCallback(
+    (frequency: number, durationSeconds: number) => {
+      const graph = ensureAudioGraph();
+
+      if (!graph) {
+        return;
+      }
+
+      playVoice(graph, {
+        frequency,
+        startTime: graph.context.currentTime,
+        durationSeconds,
+        peakGain: 0.52,
+        destination: graph.compressor,
+        layers: getMelodyLayers(waveform),
+        pianoDecay: true,
+      });
+    },
+    [ensureAudioGraph, playVoice, waveform],
+  );
+
+  const playMetronomeTick = useCallback(
+    (frequency: number) => {
+      const graph = ensureAudioGraph();
+
+      if (!graph) {
+        return;
+      }
+
+      playVoice(graph, {
+        frequency,
+        startTime: graph.context.currentTime,
+        durationSeconds: 0.055,
+        peakGain: 0.16,
+        destination: graph.compressor,
+        layers: [
+          { type: waveform, freqRatio: 1, detuneCents: 0, gainRatio: 1 },
+        ],
+        pianoDecay: false,
+      });
+    },
+    [ensureAudioGraph, playVoice, waveform],
   );
 
   const triggerPlaybackEvents = useCallback(
@@ -377,10 +595,9 @@ export function useSectionTransport({
                 .map((note) => noteNameToFrequency(note, 3))
                 .filter((frequency): frequency is number => frequency !== null);
 
-        playToneFrequencies(
+        playChordFrequencies(
           frequencies,
           chord.durationBeats * secondsPerBeat * 0.92,
-          0.72,
         );
         eventKeys.add(eventKey);
       });
@@ -392,10 +609,9 @@ export function useSectionTransport({
           return;
         }
 
-        playToneFrequencies(
-          [midiToFrequency(note.pitch)],
+        playMelodyFrequency(
+          midiToFrequency(note.pitch),
           note.durationBeats * secondsPerBeat * 0.88,
-          0.52,
         );
         eventKeys.add(eventKey);
       });
@@ -417,11 +633,7 @@ export function useSectionTransport({
           continue;
         }
 
-        playToneFrequencies(
-          [beat % beatsPerBar === 0 ? 1046.5 : 784],
-          0.055,
-          0.16,
-        );
+        playMetronomeTick(beat % beatsPerBar === 0 ? 1046.5 : 784);
         eventKeys.add(eventKey);
       }
     },
@@ -431,7 +643,9 @@ export function useSectionTransport({
       chords,
       melodicNotes,
       metronomeEnabled,
-      playToneFrequencies,
+      playChordFrequencies,
+      playMelodyFrequency,
+      playMetronomeTick,
       sectionId,
       tempoBpm,
     ],
@@ -514,14 +728,29 @@ export function useSectionTransport({
     triggerPlaybackEvents,
   ]);
 
+  // masterLevel lives on the persistent master gain so the slider also
+  // affects notes that are already sounding.
+  useEffect(() => {
+    masterLevelRef.current = clampMasterLevel(masterLevel);
+    const graph = audioGraphRef.current;
+
+    if (graph) {
+      graph.masterGain.gain.setTargetAtTime(
+        masterLevelRef.current,
+        graph.context.currentTime,
+        0.02,
+      );
+    }
+  }, [masterLevel]);
+
   useEffect(() => {
     return () => {
       silenceAllVoices();
-      const audioContext = audioContextRef.current;
-      audioContextRef.current = null;
+      const graph = audioGraphRef.current;
+      audioGraphRef.current = null;
 
-      if (audioContext && audioContext.state !== "closed") {
-        void audioContext.close();
+      if (graph && graph.context.state !== "closed") {
+        void graph.context.close();
       }
     };
   }, [silenceAllVoices]);
