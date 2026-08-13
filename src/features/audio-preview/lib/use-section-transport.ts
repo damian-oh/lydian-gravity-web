@@ -728,6 +728,15 @@ export function useSectionTransport({
     triggerPlaybackEvents,
   ]);
 
+  // Switching sections unbinds the scope, which halts the tick loop and
+  // reports "stopped" — but voices already sounding would otherwise keep
+  // ringing into the newly selected section.
+  useEffect(() => {
+    if (!isCurrentScopeBound) {
+      silenceAllVoices();
+    }
+  }, [isCurrentScopeBound, silenceAllVoices]);
+
   // masterLevel lives on the persistent master gain so the slider also
   // affects notes that are already sounding.
   useEffect(() => {
