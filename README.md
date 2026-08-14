@@ -8,6 +8,14 @@ This repository is the portfolio-facing client. It connects to the companion
 FastAPI backend:
 [lydian-gravity-fastapi](https://github.com/damian-oh/lydian-gravity-fastapi).
 
+## Live Demo
+
+**<https://lydiangravity.damianoh.com>**
+
+Demo mode is on, so you can enter the workspace without registering. The
+backend runs on a free-tier instance with an ephemeral filesystem, so saved
+sketches reset when it restarts.
+
 ## Project Highlights
 
 - **Complete authenticated flow:** Register, log in, persist a session token,
@@ -72,21 +80,20 @@ Core routes:
 The app expects the FastAPI service to expose the same `/api/v1` contract used
 by the backend repository.
 
+| Variable | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_API_BASE_URL` | API base URL, including the `/api/v1` prefix. Falls back to `http://127.0.0.1:8000/api/v1` |
+| `NEXT_PUBLIC_DEMO_MODE` | Set to `true` to offer a no-registration demo account. Requires `DEMO_MODE=True` on the backend |
+
 Create `.env.local` for local development:
 
 ```bash
 NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000/api/v1
+NEXT_PUBLIC_DEMO_MODE=true
 ```
 
-For production, set the same variable to the deployed API base URL:
-
-```bash
-NEXT_PUBLIC_API_BASE_URL=https://your-api-domain.example/api/v1
-```
-
-`NEXT_PUBLIC_API_BASE_URL` is bundled into client-side code at build time. If it
-is omitted, the app falls back to `http://127.0.0.1:8000/api/v1`, which is only
-useful for local development.
+Both are bundled into client-side code at build time, so changing either one
+requires a rebuild rather than a restart.
 
 ## Local Development
 
@@ -139,29 +146,15 @@ Run the production server locally after building:
 npm run start
 ```
 
-## Deployment Notes
+## Deployment
 
-This app is designed for a standard Next.js deployment, such as Vercel.
+A standard Next.js deployment; the live instance runs on Vercel with the
+framework preset and no custom configuration.
 
-Deployment checklist:
-
-- Use the Next.js framework preset.
-- Install dependencies with `npm install`.
-- Build with `npm run build`.
-- Set `NEXT_PUBLIC_API_BASE_URL` to the deployed FastAPI `/api/v1` URL before
-  building.
-- Configure the backend CORS allowlist with the deployed frontend origin.
-- Redeploy the frontend after changing `NEXT_PUBLIC_API_BASE_URL`.
-
-After deployment, verify the main user flows:
-
-- Register a new account.
-- Log in.
-- Open the library.
-- Create a new sketch.
-- Edit and save an arrangement.
-- Request theory suggestions from the editor.
-- Play back a section through the browser audio preview.
+Set both environment variables **before** the first build, since they are
+inlined into the bundle. The backend's `BACKEND_CORS_ORIGINS` allowlist must
+name the deployed frontend origin exactly, or every API call is blocked by
+CORS.
 
 ## Companion Project
 
