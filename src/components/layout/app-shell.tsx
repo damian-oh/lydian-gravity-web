@@ -96,19 +96,12 @@ function NavigationLink({
         scroll={false}
         onClick={handleClick}
         className={cn(
-          "group inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold tracking-[0.08em] transition focus:outline-none focus:ring-4 focus:ring-accent/20",
+          "inline-flex items-center rounded-full border px-4 py-2 text-sm font-semibold tracking-[0.08em] transition focus:outline-none focus:ring-4 focus:ring-accent/20",
           active
             ? "border-accent/40 bg-accent-soft/75 text-foreground shadow-[0_18px_40px_-28px_rgba(245,158,11,0.8)]"
             : "border-highlight/80 bg-background/45 text-foreground/72 hover:border-accent/25 hover:bg-background/75 hover:text-foreground",
         )}
       >
-        <span
-          aria-hidden="true"
-          className={cn(
-            "h-2.5 w-2.5 rounded-full transition",
-            active ? "bg-accent" : "bg-highlight group-hover:bg-accent/70",
-          )}
-        />
         <span>{label}</span>
       </Link>
     );
@@ -120,7 +113,7 @@ function NavigationLink({
       scroll={false}
       onClick={handleClick}
       className={cn(
-        "group rounded-[1.35rem] border px-4 py-3 transition focus:outline-none focus:ring-4 focus:ring-accent/20",
+        "rounded-[1.35rem] border px-4 py-3 transition focus:outline-none focus:ring-4 focus:ring-accent/20",
         active
           ? "border-accent/40 bg-accent-soft/70 text-foreground shadow-[0_18px_40px_-28px_rgba(245,158,11,0.8)]"
           : "border-highlight/80 bg-background/45 text-foreground/72 hover:border-accent/25 hover:bg-background/75 hover:text-foreground",
@@ -128,18 +121,7 @@ function NavigationLink({
       )}
     >
       <div className="space-y-1">
-        <div className="flex items-center gap-2">
-          <span
-            aria-hidden="true"
-            className={cn(
-              "h-2.5 w-2.5 rounded-full transition",
-              active ? "bg-accent" : "bg-highlight group-hover:bg-accent/70",
-            )}
-          />
-          <span className="text-sm font-semibold tracking-[0.06em]">
-            {label}
-          </span>
-        </div>
+        <div className="text-sm font-semibold tracking-[0.06em]">{label}</div>
         <p className="text-sm leading-5 text-muted">{description}</p>
       </div>
     </Link>
