@@ -139,9 +139,6 @@ export default function Home() {
 
         <section className="grid flex-1 items-center gap-12 py-16 sm:py-20 lg:grid-cols-[minmax(0,1fr)_24rem]">
           <div className="max-w-2xl space-y-6">
-            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-accent">
-              Harmonic thinking for the modern web
-            </p>
             <h1 className="text-5xl font-semibold tracking-tight text-foreground sm:text-6xl">
               Lydian Gravity
             </h1>
