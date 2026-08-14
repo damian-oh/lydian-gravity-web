@@ -67,10 +67,6 @@ export function DemoSessionButton({
       >
         {isStarting ? "Starting Demo..." : "Continue As Demo User"}
       </button>
-
-      <p className="text-center text-xs leading-5 text-foreground/55">
-        No sign-up required. You get a private sandbox with a starter song.
-      </p>
     </div>
   );
 }

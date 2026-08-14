@@ -170,12 +170,6 @@ export default function Home() {
                 Sign in
               </Link>
             </div>
-
-            {isDemoMode ? (
-              <p className="text-sm text-muted">
-                No sign-up required — a private sandbox with a starter song.
-              </p>
-            ) : null}
           </div>
 
           <div className="hidden lg:block">
